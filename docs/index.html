@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRACER336 — Never lose what you just heard</title>
+    <meta name="description" content="A lightweight macOS menu bar app that continuously records audio in the background. Drag to save. Open source. Private by design.">
+    <meta name="theme-color" content="#0a0a0a">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="TRACER336">
+    <meta property="og:description" content="Never lose what you just heard. A lightweight macOS audio recorder that lives in your menu bar.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tracer336.com">
+    
+    <!-- Favicon — gradient grey version of the TRACER336 icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2000 2000'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23888'/%3E%3Cstop offset='100%25' stop-color='%23bbb'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath fill='%23bbb' d='M2000.1483,1000.0174c-.1599-169.7-43.55-337.06-125.7-485.38l-17.8101-30.86c-84.45-140.44-204.6799-262.05-356.6499-349.79l-62.4202,108.11c-128.72-74.47-278.1699-117.1-437.5698-117.1s-308.8501,42.63-437.5701,117.1l-62.51-108.26c-146.88,84.98-270.13,206.24-357.5,351.54-6.12,10.17-12.06,20.46-17.82,30.86C45.1983,659.5974-.0017,824.5174-.0017,999.9974h125c0,323.83,175.91,606.5699,437.39,757.88l-62.49,108.25c147.04,84.71,313.68,130.8201,483.2,133.8301h35.6301c163.8599-2.9102,329.2799-46.2301,481.25-133.9701l-62.4102-108.09c261.5-151.3,437.4302-434.05,437.4302-757.9,0-27.68-1.29-55.07-3.8-82.09,2.59,27.24,3.9099,54.64,3.9399,82.11h125.01ZM999.9984,1749.9974c-136.6301,0-264.7301-36.5399-375.0601-100.38-224.14-129.6799-374.94-372.04-374.94-649.62s150.8-519.94,374.94-649.62c110.33-63.84,238.43-100.38,375.0601-100.38,414.22,0,750,335.79,750,750s-335.78,750-750,750Z'/%3E%3Cpath fill='%23999' d='M1500.0583,999.9674c-.01,12.71-.51,25.39-1.4801,38.0099.9401-12.54,1.4202-25.2,1.4202-37.98,0-185.05-100.53-346.62-249.9601-433.08l62.4501-108.17c-41.74-24.1-85.1201-42.84-129.3-56.43-1.4301-.44-2.8501-.87-4.28-1.3h-.02c-1.4199-.42-2.83-.84-4.24-1.25-1.64-.48-3.27-.95-4.8999-1.41-1.5801-.45-3.1501-.89-4.7301-1.3199-.24-.07-.48-.13-.72-.19-1.4601-.4-2.92-.8-4.38-1.1801-1.73-.46-3.46-.92-5.2-1.36-.8201-.21-1.6401-.42-2.4601-.63-2.4401-.61-4.88-1.21-7.33-1.79-1.45-.34-2.91-.68-4.37-1.02-.04-.01-.0699-.02-.11-.03-62.29-14.39-125.6901-18.88-188.04-14.06-1.65.13-3.3.26-4.94.4-1.35.11-2.69.23-4.02.35-1.46.13-2.92.27-4.37.41-1.42.14-2.84.29-4.26.43-1.4.15-2.8.3-4.19.45-1.37.15-2.74.31-4.11.47-1.35.16-2.7.33-4.04.49-82.55,10.41-162.59,37.16-235.04,78.89l62.5,108.26c-149.42,86.46-249.94,248.03-249.94,433.07h-125c0,231.3199,125.66,433.28,312.45,541.35l62.51-108.27c73.55,42.5601,158.95,66.92,250.0401,66.92s176.49-24.36,250.0399-66.92l62.4401,108.15c19.26-11.12,37.7-23.11,55.3099-35.88,1.17-.86,2.34-1.71,3.51-2.5699,1.24-.92,2.48-1.84,3.72-2.76,1.16-.87,2.3099-1.74,3.4601-2.62,1.48-1.12,2.96-2.25,4.4299-3.39,58.78-45.4301,107.61-99.9301,145.65-160.3199.6801-1.0601,1.35-2.1201,2-3.1901.4401-.7001.87-1.4,1.2999-2.1.5801-.9299,1.15-1.86,1.73-2.8,49.4701-80.8899,81.0601-173.8999,89.27-273.55.02-.23.04-.46.05-.68.0901-1,.1699-2.01,.25-3.01.01-.16.02-.31.03-.47,1.24-15.92,1.8799-31.9,1.8899-47.92h-125.0199ZM999.9984,1374.9974c-207.1101,0-375.0001-167.89-375.0001-375s167.89-375,375.0001-375,375,167.9,375,375-167.8901,375-375,375Z'/%3E%3Ccircle fill='%23777' cx='1000' cy='1000' r='125'/%3E%3C/svg%3E">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #050505;
+            --bg-raised: #0d0d0d;
+            --bg-card: #111111;
+            --border: #1a1a1a;
+            --border-hover: #2a2a2a;
+            --text: #e8e8e8;
+            --text-dim: #666666;
+            --text-muted: #444444;
+            --accent: #ffffff;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: rgba(255, 255, 255, 0.15); }
+        a { color: var(--text); text-decoration: none; }
+
+        /* Noise */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .container { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Nav ─────────────────────────────────────────── */
+
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 16px 0;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            color: #aaa;
+        }
+
+        /* Spinning icon in nav */
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .nav-icon svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            background: transparent;
+            color: #aaa;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            border-color: #444;
+            color: var(--text);
+            background: var(--bg-raised);
+        }
+
+        .nav-btn svg { width: 16px; height: 16px; }
+
+        /* ── Hero ────────────────────────────────────────── */
+
+        .hero {
+            padding: 170px 0 80px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: clamp(40px, 7vw, 64px);
+            font-weight: 300;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 24px;
+            animation: fadeUp 0.8s ease both 0.1s;
+        }
+
+        .hero-quote-attr {
+            font-size: 14px;
+            color: var(--text);
+            margin-top: -16px;
+            margin-bottom: 48px;
+            animation: fadeUp 0.8s ease both 0.15s;
+        }
+
+        .hero-sub {
+            font-size: 17px;
+            color: var(--text-dim);
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.7;
+            animation: fadeUp 0.8s ease both 0.2s;
+        }
+
+        /* Each letter gets its own color and wobble animation */
+        .tracer-text {
+            display: inline;
+        }
+
+        .tracer-text span {
+            display: inline-block;
+            font-weight: 500;
+            animation: wobble 1.5s ease-in-out infinite;
+        }
+
+        @keyframes wobble {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(-3deg); }
+            75% { transform: translateY(2px) rotate(2deg); }
+        }
+
+        /* ── Demo ────────────────────────────────────────── */
+
+        .demo {
+            padding: 60px 0 0;
+            animation: fadeUp 1s ease both 0.4s;
+        }
+
+        .demo-window {
+            position: relative;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            overflow: hidden;
+            aspect-ratio: 16 / 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-window::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 36px;
+            background: var(--bg-raised);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .demo-window .dots {
+            position: absolute;
+            top: 12px; left: 14px;
+            display: flex;
+            gap: 7px;
+            z-index: 1;
+        }
+
+        .demo-window .dots span {
+            width: 11px; height: 11px;
+            border-radius: 50%;
+            background: var(--border-hover);
+        }
+
+        .demo-placeholder {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .demo-window img,
+        .demo-window video {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* ── How ─────────────────────────────────────────── */
+
+        .how { padding: 60px 0; }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 48px;
+            text-align: center;
+        }
+
+        .steps {
+            display: flex;
+            gap: 48px;
+            justify-content: center;
+        }
+
+        .step { text-align: center; flex: 1; max-width: 180px; }
+
+        .step-num {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+
+        .step h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+        .step p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+
+        /* ── Features ────────────────────────────────────── */
+
+        .features { padding: 60px 0; }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .feature {
+            padding: 32px;
+            background: var(--bg);
+            transition: background 0.3s;
+        }
+
+        .feature:hover { background: var(--bg-raised); }
+
+        .feature-icon { font-size: 20px; margin-bottom: 16px; display: block; }
+        .feature h3 { font-size: 15px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.01em; }
+        .feature p { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
+
+        /* ── OSS ──────────────────────────────────────────── */
+
+        .oss { padding: 24px 0 60px; }
+
+        .oss-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            background: var(--bg-raised);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .oss-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.02), transparent 60%);
+            pointer-events: none;
+        }
+
+        .oss-card h2 {
+            font-size: 24px; font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .oss-card p {
+            font-size: 14px;
+            color: var(--text-dim);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.65;
+            position: relative;
+        }
+
+        /* ── Footer ──────────────────────────────────────── */
+
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        footer .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        footer p { font-size: 12px; color: var(--text-muted); }
+
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a { font-size: 12px; color: var(--text-muted); transition: color 0.2s; }
+        .footer-links a:hover { color: var(--text-dim); }
+
+        /* ── Animations ──────────────────────────────────── */
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive ──────────────────────────────────── */
+
+        @media (max-width: 600px) {
+            .hero { padding: 140px 0 60px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .steps { flex-direction: column; align-items: center; gap: 32px; }
+            .oss-card { padding: 32px 24px; }
+            footer .container { flex-direction: column; gap: 12px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nav -->
+    <nav>
+        <div class="container">
+            <div class="nav-left">
+                <!-- Spinning icon — outer and middle rings rotate with scroll -->
+                <div class="nav-icon">
+                    <svg id="icon-outer" viewBox="0 0 2000 2000">
+                        <path fill="#ccc" d="M2000.1483,1000.0174c-.1599-169.7-43.55-337.06-125.7-485.38l-17.8101-30.86c-84.45-140.44-204.6799-262.05-356.6499-349.79l-62.4202,108.11c-128.72-74.47-278.1699-117.1-437.5698-117.1s-308.8501,42.63-437.5701,117.1l-62.51-108.26c-146.88,84.98-270.13,206.24-357.5,351.54-6.12,10.17-12.06,20.46-17.82,30.86C45.1983,659.5974-.0017,824.5174-.0017,999.9974h125c0,323.83,175.91,606.5699,437.39,757.88l-62.49,108.25c147.04,84.71,313.68,130.8201,483.2,133.8301h35.6301c163.8599-2.9102,329.2799-46.2301,481.25-133.9701l-62.4102-108.09c261.5-151.3,437.4302-434.05,437.4302-757.9,0-27.68-1.29-55.07-3.8-82.09,2.59,27.24,3.9099,54.64,3.9399,82.11h125.01ZM999.9984,1749.9974c-136.6301,0-264.7301-36.5399-375.0601-100.38-224.14-129.6799-374.94-372.04-374.94-649.62s150.8-519.94,374.94-649.62c110.33-63.84,238.43-100.38,375.0601-100.38,414.22,0,750,335.79,750,750s-335.78,750-750,750Z"/>
+                    </svg>
+                    <svg id="icon-middle" viewBox="0 0 2000 2000">
+                        <path fill="#ccc" d="M1500.0583,999.9674c-.01,12.71-.51,25.39-1.4801,38.0099.9401-12.54,1.4202-25.2,1.4202-37.98,0-185.05-100.53-346.62-249.9601-433.08l62.4501-108.17c-41.74-24.1-85.1201-42.84-129.3-56.43-1.4301-.44-2.8501-.87-4.28-1.3h-.02c-1.4199-.42-2.83-.84-4.24-1.25-1.64-.48-3.27-.95-4.8999-1.41-1.5801-.45-3.1501-.89-4.7301-1.3199-.24-.07-.48-.13-.72-.19-1.4601-.4-2.92-.8-4.38-1.1801-1.73-.46-3.46-.92-5.2-1.36-.8201-.21-1.6401-.42-2.4601-.63-2.4401-.61-4.88-1.21-7.33-1.79-1.45-.34-2.91-.68-4.37-1.02-.04-.01-.0699-.02-.11-.03-62.29-14.39-125.6901-18.88-188.04-14.06-1.65.13-3.3.26-4.94.4-1.35.11-2.69.23-4.02.35-1.46.13-2.92.27-4.37.41-1.42.14-2.84.29-4.26.43-1.4.15-2.8.3-4.19.45-1.37.15-2.74.31-4.11.47-1.35.16-2.7.33-4.04.49-82.55,10.41-162.59,37.16-235.04,78.89l62.5,108.26c-149.42,86.46-249.94,248.03-249.94,433.07h-125c0,231.3199,125.66,433.28,312.45,541.35l62.51-108.27c73.55,42.5601,158.95,66.92,250.0401,66.92s176.49-24.36,250.0399-66.92l62.4401,108.15c19.26-11.12,37.7-23.11,55.3099-35.88,1.17-.86,2.34-1.71,3.51-2.5699,1.24-.92,2.48-1.84,3.72-2.76,1.16-.87,2.3099-1.74,3.4601-2.62,1.48-1.12,2.96-2.25,4.4299-3.39,58.78-45.4301,107.61-99.9301,145.65-160.3199.6801-1.0601,1.35-2.1201,2-3.1901.4401-.7001.87-1.4,1.2999-2.1.5801-.9299,1.15-1.86,1.73-2.8,49.4701-80.8899,81.0601-173.8999,89.27-273.55.02-.23.04-.46.05-.68.0901-1,.1699-2.01,.25-3.01.01-.16.02-.31.03-.47,1.24-15.92,1.8799-31.9,1.8899-47.92h-125.0199ZM999.9984,1374.9974c-207.1101,0-375.0001-167.89-375.0001-375s167.89-375,375.0001-375,375,167.9,375,375-167.8901,375-375,375Z"/>
+                    </svg>
+                    <svg id="icon-center" viewBox="0 0 2000 2000">
+                        <circle fill="#ccc" cx="1000" cy="985" r="125"/>
+                    </svg>
+                </div>
+                <span class="nav-brand">TRACER336</span>
+            </div>
+            <div class="nav-links">
+                <!-- GitHub -->
+                <a href="https://github.com/afraazali42/TRACER336" class="nav-btn" title="View Source">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+                <!-- Download -->
+                <a href="https://github.com/afraazali42/TRACER336/releases" class="nav-btn" title="Download">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <h1>"Stop the record...<br>and rewind that"</h1>
+            <p class="hero-quote-attr">— Kanye West</p>
+            <p class="hero-sub">you guys remember how we would cringe at those tiktoks that were like <span class="tracer-text" id="tracer-text">☝️i'm already tracer🤓</span> but looking back honestly legendary golden era shit right there</p>
+        </div>
+    </section>
+
+    <!-- Demo -->
+    <section class="demo">
+        <div class="container">
+            <div class="demo-window">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <!-- Replace with your demo:
+                     <img src="assets/demo.gif" alt="TRACER336 demo">
+                     or
+                     <video src="assets/demo.mp4" autoplay muted loop playsinline></video>
+                -->
+                <span class="demo-placeholder">// your demo GIF goes here</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- How to Use (caption for the demo above) -->
+    <section class="oss">
+        <div class="container">
+            <div class="oss-card">
+                <h2>How it works</h2>
+                <p>so like basically what it does is it's a macOS menu bar app and it just sits there recording audio. you click and drag from the icon away from it and release to save a file of audio it was recording. there used to be an app like it which i used but it got acquired and they filled it with bloat and AI garbage that only VCs care about and i don't really trust them with my data considering you need an internet connection just to save your own recordings. i hope i don't get sued knock on wood.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <div class="container">
+            <div class="features-grid">
+                <div class="feature">
+                    <span class="feature-icon">🔒</span>
+                    <h3>Private by design</h3>
+                    <p>All audio stays on your Mac. No cloud. No accounts. No internet required. Ever.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🪶</span>
+                    <h3>Featherweight</h3>
+                    <p>Under 5 MB. Uses AAC compression at 32 kbps — 8 hours of buffer fits in ~126 MB of memory.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🎯</span>
+                    <h3>One gesture</h3>
+                    <p>Drag distance equals time. No menus to navigate, no buttons to click. Muscle memory in minutes.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🔧</span>
+                    <h3>Developer-friendly</h3>
+                    <p>Fully documented Swift codebase. Plugin-ready architecture. Built-in logging system. Fork and extend.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- "i'm already tracer" letter effects -->
+    <script>
+        (function() {
+            const el = document.getElementById('tracer-text');
+            const chars = Array.from(el.textContent);
+            const colors = ['#ff6bf5', '#c96bff', '#7b5cff', '#5ca0ff', '#00d4ff', '#00ffc8', '#7bff5c', '#ffe05c', '#ff8c5c', '#ff5c5c'];
+            el.textContent = '';
+            let colorIdx = 0;
+            for (let i = 0; i < chars.length; i++) {
+                const ch = chars[i];
+                // Skip variation selectors (they're part of the previous emoji)
+                if (ch === '\uFE0F') continue;
+                const span = document.createElement('span');
+                if (ch === ' ') {
+                    span.innerHTML = '&nbsp;';
+                } else {
+                    span.textContent = ch;
+                }
+                span.style.color = colors[colorIdx % colors.length];
+                span.style.animationDelay = (colorIdx * 0.08) + 's';
+                colorIdx++;
+                el.appendChild(span);
+            }
+        })();
+    </script>
+
+    <!-- Scroll-driven icon rotation -->
+    <script>
+        const outer = document.getElementById('icon-outer');
+        const middle = document.getElementById('icon-middle');
+        let lastScroll = 0;
+        let outerAngle = 0;
+        let middleAngle = 0;
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const delta = scrollY - lastScroll;
+            lastScroll = scrollY;
+
+            // Both rings rotate at the same speed, opposite directions
+            outerAngle += delta * 0.35;
+            middleAngle -= delta * 0.35;
+
+            outer.style.transform = `rotate(${outerAngle}deg)`;
+            middle.style.transform = `rotate(${middleAngle}deg)`;
+        }, { passive: true });
+    </script>
+
+</body>
+</html>
