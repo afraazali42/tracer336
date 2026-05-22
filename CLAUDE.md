@@ -8,6 +8,10 @@ Notes for Claude across sessions on this repo.
 - **Commit message style:** lowercase subject line, present-tense verbs (`add`, `fix`, `update`, not `Added`/`Fixed`). Multi-line body when context helps.
 - **No force pushes**, no rewriting shared history without an explicit request.
 
+## macOS gotcha: screenshot filenames use U+202F
+
+macOS screen capture saves files like `Screenshot 2026-05-21 at 10.54.15 PM.png`, BUT the space between the time and AM/PM is **U+202F Narrow No-Break Space**, not a regular space. Typing the filename literally with a regular space will fail with `ENOENT`. Always use glob patterns (`~/Desktop/Screenshot*PM*.png`) or AppleScript via Finder to move/rename screenshot files. Claude.app has Desktop folder access granted in TCC, but that doesn't help if the filename byte string doesn't match.
+
 ## Shipping credentials
 
 Local-only, gitignored:
