@@ -15,7 +15,6 @@ aite so pretty much there was this app I used to use that would record audio in 
 </td>
 <td>
 
-<!-- Replace with your spinning icon GIF -->
 <img src="docs/assets/icon-spin.gif" width="200" alt="TRACER336 icon">
 
 </td>
