@@ -88,6 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Run as a menu bar accessory — no dock icon, no main window
         NSApp.setActivationPolicy(.accessory)
+        setupMainMenu()
         setupMenuBar()
         
         recorder.startRecording()
@@ -206,7 +207,96 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         let pan = NSPanGestureRecognizer(target: self, action: #selector(handleDrag(_:)))
         button.addGestureRecognizer(pan)
     }
-    
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MARK: - Main Menu (window-focused menu bar)
+    // ─────────────────────────────────────────────────────────────────────────
+    //
+    // LSUIElement apps don't get an auto-generated menu bar at the top of the
+    // screen, so the standard keyboard shortcuts (⌘C / ⌘V / ⌘A in text fields,
+    // ⌘W to close a window, etc.) silently don't work. We build a minimal menu
+    // here so the shortcuts wire up via the responder chain.
+    //
+    // Design decision: only one top-level menu ("TRACER336") is exposed, with
+    // About and Quit at the surface and everything else (text editing, window
+    // management, app hide) tucked inside an "Actions" submenu. Cocoa doesn't
+    // care that Cut/Copy/Paste aren't under a menu literally named "Edit" — it
+    // routes shortcuts based on the selector + key equivalent on each item.
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+
+        // ── TRACER336 menu (the only visible top-level menu) ────────────────
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+        let appMenu = NSMenu(title: "TRACER336")
+        appMenuItem.submenu = appMenu
+
+        // About → standard panel populated from Info.plist
+        appMenu.addItem(NSMenuItem(
+            title: "About",
+            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+            keyEquivalent: ""
+        ))
+
+        appMenu.addItem(.separator())
+
+        // ── Actions submenu (out-of-the-way home for shortcut-bearing items) ─
+        let actionsItem = NSMenuItem(title: "Actions", action: nil, keyEquivalent: "")
+        let actionsMenu = NSMenu(title: "Actions")
+        actionsItem.submenu = actionsMenu
+        appMenu.addItem(actionsItem)
+
+        // Undo / Redo — routed to the first responder's undo manager
+        actionsMenu.addItem(NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z"))
+        let redoItem = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        redoItem.keyEquivalentModifierMask = [.command, .shift]
+        actionsMenu.addItem(redoItem)
+
+        actionsMenu.addItem(.separator())
+
+        // Text editing — selectors travel the responder chain to the focused control
+        actionsMenu.addItem(NSMenuItem(title: "Cut",  action: #selector(NSText.cut(_:)),  keyEquivalent: "x"))
+        actionsMenu.addItem(NSMenuItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+        actionsMenu.addItem(NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
+        actionsMenu.addItem(NSMenuItem(title: "Delete", action: #selector(NSText.delete(_:)), keyEquivalent: ""))
+        actionsMenu.addItem(NSMenuItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
+
+        actionsMenu.addItem(.separator())
+
+        // Window management — dispatched via the responder chain to the key window
+        actionsMenu.addItem(NSMenuItem(title: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"))
+        actionsMenu.addItem(NSMenuItem(title: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
+        actionsMenu.addItem(NSMenuItem(title: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: ""))
+
+        actionsMenu.addItem(.separator())
+
+        // App hide / show — on NSApplication
+        actionsMenu.addItem(NSMenuItem(title: "Hide TRACER336", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"))
+        let hideOthers = NSMenuItem(
+            title: "Hide Others",
+            action: #selector(NSApplication.hideOtherApplications(_:)),
+            keyEquivalent: "h"
+        )
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        actionsMenu.addItem(hideOthers)
+        actionsMenu.addItem(NSMenuItem(
+            title: "Show All",
+            action: #selector(NSApplication.unhideAllApplications(_:)),
+            keyEquivalent: ""
+        ))
+
+        // Quit at the bottom of the surface-level menu
+        appMenu.addItem(.separator())
+        appMenu.addItem(NSMenuItem(
+            title: "Quit",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        ))
+
+        NSApp.mainMenu = mainMenu
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // MARK: - Coordinate Helpers
     // ─────────────────────────────────────────────────────────────────────────
