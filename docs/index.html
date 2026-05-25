@@ -353,27 +353,19 @@
         .contact-select:focus { border-color: var(--border-hover); outline: none; }
 
         .contact-response {
+            display: none;
             margin-top: 14px;
-            padding: 0 18px;
+            padding: 14px 18px;
             background: var(--bg);
-            border: 1px solid transparent;
+            border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text);
             font-size: 14px;
             line-height: 1.6;
             text-align: left;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.2s ease, border-color 0.2s ease;
         }
 
-        .contact-response.show {
-            max-height: 200px;
-            opacity: 1;
-            padding: 14px 18px;
-            border-color: var(--border);
-        }
+        .contact-response.show { display: block; }
 
         .contact-response a {
             color: var(--text);
