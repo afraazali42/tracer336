@@ -31,12 +31,13 @@ mkdir -p "$OUT_DIR"
 
 SIZE=400        # Final GIF size in px
 DURATION=6.0    # Seconds per full rotation. Want slower? Increase this.
-FPS=30          # Frame rate. Higher = smoother motion + larger file.
-                # Playback delay below is auto-computed to match FPS, so
-                # changing DURATION/FPS gives you a natural-speed animation.
+FPS=20          # IMPORTANT: keep ≤ 20 so the per-frame delay stays ≥ 5cs.
+                # Safari/WebKit, Quick Look, and many macOS native viewers
+                # floor GIF delays below 5cs (50ms) up to 10cs (100ms), so
+                # a "30fps" GIF actually plays at 10fps and looks jittery.
+                # 20fps with delay=5 is universally respected and smooth.
 
-# Playback delay in centiseconds (gifsicle --delay). Matches FPS so each
-# frame is displayed for its source duration — produces smooth motion.
+# Auto-computed playback delay (gifsicle --delay, in centiseconds).
 PLAYBACK_DELAY=$(printf '%.0f' "$(echo "100 / $FPS" | bc -l)")
 
 OUTER_SVG="$ASSETS_SRC/MenuBarOuterRing.imageset/OuterRing.svg"
