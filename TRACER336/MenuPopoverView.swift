@@ -7,14 +7,14 @@
 //
 // LAYOUT:
 //   ┌──────────────────────────┐
-//   │ 🎵 TRACER336        v1.0 │
+//   │ 🎵 TRACER336              │
 //   ├──────────────────────────┤
-//   │ ⏺ Recording           🟢 │  ← Toggle recording on/off
+//   │ ⏺ Recording           🟢 │  ← Toggle recording (does NOT close popover)
 //   │ ⬇ Quick Save              │  ← Export all buffered audio immediately
 //   │ { } Source Code            │  ← Opens GitHub repo
-//   │ ♥ Support                  │  ← Opens support page
+//   │ ♥ Support                  │  ← Opens support page (closes popover)
 //   ├──────────────────────────┤
-//   │ ⚙ Settings...  🔴   ⌘,   │  ← Opens settings (red dot = device error)
+//   │ ⚙ Settings     🔴   ⌘,   │  ← Opens settings (red dot = device error)
 //   │ ✕ Quit              ⌘Q   │
 //   └──────────────────────────┘
 //
@@ -34,20 +34,14 @@ struct MenuPopoverView: View {
     var hasLogErrors: Bool      // True when there are unresolved error-level logs
     var onToggleRecording: () -> Void
     var onSaveAll: () -> Void
+    var onSupport: () -> Void
     var onSettings: () -> Void
     var onQuit: () -> Void
-    
+
     // ── Constants ───────────────────────────────────────────────────────────
-    
+
     /// Fixed width for the leading icon column so labels align vertically.
     private let iconWidth: CGFloat = 20
-
-    /// "v" + CFBundleShortVersionString, e.g. "v1.0". Read from Info.plist once
-    /// at type load so we don't hit the bundle dictionary on every popover render.
-    private static let appVersionString: String = {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        return "v\(version)"
-    }()
     
     // ── Body ────────────────────────────────────────────────────────────────
     
@@ -61,9 +55,6 @@ struct MenuPopoverView: View {
                 Text("TRACER336")
                     .font(.headline)
                 Spacer()
-                Text(Self.appVersionString)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -103,10 +94,7 @@ struct MenuPopoverView: View {
                     NSWorkspace.shared.open(URL(string: "https://github.com/afraazali42/TRACER336")!)
                 }
                 
-                popoverButton(icon: "heart", label: "Support") {
-                    // TODO: Replace with Ko-fi URL once set up
-                    NSWorkspace.shared.open(URL(string: "https://tracer336.com")!)
-                }
+                popoverButton(icon: "heart", label: "Support", action: onSupport)
                 
                 Divider()
                     .padding(.horizontal, 8)
@@ -118,7 +106,7 @@ struct MenuPopoverView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "gear")
                             .frame(width: iconWidth, alignment: .center)
-                        Text("Settings...")
+                        Text("Settings")
                         if hasDeviceError || hasLogErrors {
                             PulsingDot()
                         }

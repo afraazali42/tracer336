@@ -452,13 +452,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
                 } else {
                     self.recorder.resumeRecording()
                 }
-                self.popover?.performClose(nil)
+                // Intentionally do NOT close the popover — let the user see
+                // the state flip and toggle again without reopening the menu.
+                // The popover view is cached, so rebuild rootView so the
+                // updated isRecording value shows immediately.
+                self.popoverHostingController?.rootView = self.makePopoverView()
             },
             onSaveAll: { [weak self] in
                 guard let self = self else { return }
                 self.popover?.performClose(nil)
                 let totalMinutes = max(1, Int(ceil(Double(self.recorder.availableSeconds) / 60.0)))
                 self.recorder.exportLast(minutes: totalMinutes, forceAutoSave: true)
+            },
+            onSupport: { [weak self] in
+                self?.popover?.performClose(nil)
+                // TODO: Replace with Ko-fi URL once set up
+                NSWorkspace.shared.open(URL(string: "https://tracer336.com")!)
             },
             onSettings: { [weak self] in
                 self?.popover?.performClose(nil)
