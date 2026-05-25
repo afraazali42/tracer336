@@ -480,6 +480,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // cached views can keep stale tinting when the user changes their
         // macOS accent or returns to the app after a long idle.
         recorder.objectWillChange.send()
+
+        // Re-establish our custom menu bar. SwiftUI sometimes reasserts its
+        // default menu (View / Window / Help leaking back in, "Quit TRACER336"
+        // replacing our custom "Quit") when the app gains focus. Deferred so
+        // we run after any SwiftUI menu setup that's about to happen this tick.
+        DispatchQueue.main.async { [weak self] in
+            self?.setupMainMenu()
+        }
     }
     
     // ─────────────────────────────────────────────────────────────────────────
