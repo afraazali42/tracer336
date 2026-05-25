@@ -481,6 +481,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // Catch the user coming back from System Settings after toggling
         // microphone access. If they just granted it, recorder auto-starts.
         recorder.refreshMicrophonePermission()
+
+        // Nudge cached SwiftUI view trees (popover + settings) to re-render
+        // so they pick up the current system accent color. Without this, the
+        // cached views can keep stale tinting when the user changes their
+        // macOS accent or returns to the app after a long idle.
+        recorder.objectWillChange.send()
     }
     
     // ─────────────────────────────────────────────────────────────────────────
