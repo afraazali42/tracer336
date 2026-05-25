@@ -262,18 +262,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     // care that Cut/Copy/Paste aren't under a menu literally named "Edit" — it
     // routes shortcuts based on the selector + key equivalent on each item.
 
-    /// Cached so the first call builds the menu once and subsequent calls
-    /// (from openSettings / openLogs after activation policy changes) just
-    /// reassign the same instance instead of allocating ~15 fresh NSMenuItems.
-    private var cachedMainMenu: NSMenu?
-
     private func setupMainMenu() {
-        // Already built — just reassign and bail.
-        if let cached = cachedMainMenu {
-            NSApp.mainMenu = cached
-            return
-        }
-
+        // Rebuilt fresh on every call. Caching a single NSMenu instance and
+        // reassigning it didn't work reliably — SwiftUI's auto-menu would
+        // sometimes win, and reassigning the same NSMenu reference doesn't
+        // displace it the way assigning a freshly-built one does. The ~15
+        // NSMenuItem allocations per call are cheap; correctness > perf here.
         let mainMenu = NSMenu()
 
         // ── TRACER336 menu (the only visible top-level menu) ────────────────
@@ -340,7 +334,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // anyway, leaving an empty gap on the left. Keep the system glyphs —
         // they're consistent with the system design and avoid that gap.
 
-        cachedMainMenu = mainMenu
         NSApp.mainMenu = mainMenu
     }
 
