@@ -278,9 +278,11 @@ class AudioRecorder: NSObject, ObservableObject {
         // so AAC encoding + disk I/O happen off-thread on diskWriteQueue. This
         // prevents disk-pressure and main-thread stalls from making the HAL
         // I/O work loop miss deadlines (which is what causes audible crackles
-        // in concurrent playback). Buffer size doubled from 4096 to 8192 frames
-        // (~93ms → ~186ms at 44.1kHz) for additional headroom on each callback.
-        inputNode.installTap(onBus: 0, bufferSize: 8192, format: recordingFormat) { [weak self] buffer, _ in
+        // in concurrent playback). Buffer size is set generously large (~372ms
+        // at 44.1kHz) to maximise tolerance for system-level stalls — especially
+        // important when users have HAL plugins like Rogue Amoeba's ACE in the
+        // audio chain. Latency is irrelevant for buffer-style recording.
+        inputNode.installTap(onBus: 0, bufferSize: 16384, format: recordingFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
             guard let copy = self.copyBuffer(buffer) else { return }
 
