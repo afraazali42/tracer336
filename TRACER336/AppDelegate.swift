@@ -89,6 +89,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     // ─────────────────────────────────────────────────────────────────────────
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Install the uncaught-exception handler first thing so we capture
+        // anything that goes wrong during the rest of setup. Logs the
+        // exception name, reason, and full call stack to our persistent log
+        // file, then forces a flush so the bytes actually hit disk before
+        // the process dies.
+        NSSetUncaughtExceptionHandler { exception in
+            let stack = exception.callStackSymbols.joined(separator: "\n")
+            Log.error(
+                "Uncaught \(exception.name.rawValue): \(exception.reason ?? "(no reason)")\n\(stack)",
+                category: .system
+            )
+            Log.shared.flushToDisk()
+        }
+
+        // Surface the persistent log file path so users (and us, during bug
+        // reports) know where to find historical logs.
+        Log.info("Log file: \(Log.shared.logFileURL.path)", category: .system)
+
         // Run as a menu bar accessory — no dock icon, no main window
         NSApp.setActivationPolicy(.accessory)
         // SwiftUI installs its own NSApp.mainMenu late in launch, overwriting

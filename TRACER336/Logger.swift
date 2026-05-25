@@ -168,10 +168,59 @@ class Log: ObservableObject {
     /// Observed by AppDelegate to show the pulsing red dot in the popover.
     @Published private(set) var hasUnresolvedErrors = false
     
-    /// Serial queue for thread-safe writes.
+    /// Serial queue for thread-safe writes. All file I/O happens here too so
+    /// writes are naturally ordered without extra locking.
     private let queue = DispatchQueue(label: "com.tracer336.logger", qos: .utility)
-    
-    private init() {}
+
+    // ── Persistent file logging ────────────────────────────────────────────
+    //
+    // In addition to the in-memory ring buffer, every log entry is appended to
+    // a plain-text file so logs survive crashes and app restarts. For sandboxed
+    // builds the file lives inside the app container:
+    //   ~/Library/Containers/com.tracer336.app/Data/Library/Logs/TRACER336/tracer336.log
+    // The previous log (after rotation) is preserved as tracer336.old.log so
+    // the most recent ~10 MB of history is always retrievable.
+
+    /// Public so other code (e.g. a future "Show Log File" button) can find it.
+    let logFileURL: URL
+
+    /// Open file handle for appending. Kept open for the app's lifetime to
+    /// avoid open/close churn on every log entry.
+    private var fileHandle: FileHandle?
+
+    /// Rotate the active log file when it reaches this size.
+    private let rotationThreshold: UInt64 = 5 * 1024 * 1024  // 5 MB
+
+    private init() {
+        // ~/Library/Logs/TRACER336/ inside the sandbox container.
+        let logsDir = FileManager.default
+            .urls(for: .libraryDirectory, in: .userDomainMask)
+            .first!
+            .appendingPathComponent("Logs", isDirectory: true)
+            .appendingPathComponent("TRACER336", isDirectory: true)
+        try? FileManager.default.createDirectory(at: logsDir, withIntermediateDirectories: true)
+
+        self.logFileURL = logsDir.appendingPathComponent("tracer336.log")
+
+        // Rotate at startup if the existing file is too large. We keep one
+        // generation of history as tracer336.old.log; older logs are discarded.
+        if let size = try? FileManager.default
+            .attributesOfItem(atPath: logFileURL.path)[.size] as? UInt64,
+           size > rotationThreshold {
+            let oldURL = logsDir.appendingPathComponent("tracer336.old.log")
+            try? FileManager.default.removeItem(at: oldURL)
+            try? FileManager.default.moveItem(at: logFileURL, to: oldURL)
+        }
+
+        // Create the file if missing, then open for appending.
+        if !FileManager.default.fileExists(atPath: logFileURL.path) {
+            FileManager.default.createFile(atPath: logFileURL.path, contents: nil)
+        }
+        if let handle = try? FileHandle(forWritingTo: logFileURL) {
+            handle.seekToEndOfFile()
+            self.fileHandle = handle
+        }
+    }
     
     // MARK: Core Write
     
@@ -187,10 +236,18 @@ class Log: ObservableObject {
         print(entry.displayString)
         #endif
         
-        // Append to buffer on the serial queue, then publish on main
+        // Append to buffer on the serial queue, then publish on main. Same
+        // queue also handles the file write so writes are naturally ordered
+        // and never contend with each other.
         queue.async { [weak self] in
             guard let self = self else { return }
-            
+
+            // Persist to disk so logs survive crashes / restarts.
+            if let handle = self.fileHandle,
+               let data = (entry.displayString + "\n").data(using: .utf8) {
+                try? handle.write(contentsOf: data)
+            }
+
             var updated = self.entries
             updated.append(entry)
             
@@ -209,6 +266,15 @@ class Log: ObservableObject {
         }
     }
     
+    /// Synchronously flush all queued writes to disk and fsync the file. Call
+    /// before the process is about to die (uncaught exception handler) so the
+    /// last few log lines actually make it into the persistent log file.
+    func flushToDisk() {
+        queue.sync {
+            try? fileHandle?.synchronize()
+        }
+    }
+
     /// Remove all log entries. Useful for a "Clear Logs" button in the UI.
     func clear() {
         queue.async { [weak self] in
