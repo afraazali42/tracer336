@@ -381,6 +381,22 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Used by IntersectionObserver — elements below the fold start hidden
+           and fade up as they scroll into view. Matches the hero's intro feel. */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .fade-up.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .fade-up { opacity: 1; transform: none; transition: none; }
+        }
+
         /* ── Responsive ──────────────────────────────────── */
 
         @media (max-width: 600px) {
@@ -449,7 +465,7 @@
     <!-- How to Use (caption for the demo above) -->
     <section class="oss">
         <div class="container">
-            <div class="oss-card">
+            <div class="oss-card fade-up">
                 <h2>How it works</h2>
                 <p>so like basically what it does is it's a macOS menu bar app and it just sits there recording audio. you click and drag from the icon away from it and release to save a file of audio it was recording. there used to be an app like it which i used but it got acquired and they filled it with bloat and AI garbage that only VCs care about and i don't really trust them with my data considering you need an internet connection just to save your own recordings. i hope i don't get sued knock on wood.</p>
             </div>
@@ -459,7 +475,7 @@
     <!-- Features -->
     <section class="features">
         <div class="container">
-            <div class="oss-card">
+            <div class="oss-card fade-up">
                 <ul class="bullets">
                     <li>Never connects to the internet 100% local</li>
                     <li>No accounts or sign ups</li>
@@ -473,7 +489,7 @@
     <!-- Contact -->
     <section class="contact">
         <div class="container">
-            <div class="oss-card">
+            <div class="oss-card fade-up">
                 <h2>contact me</h2>
                 <div class="contact-form">
                     <select id="contact-type" class="contact-select" aria-label="reason for contact">
@@ -537,6 +553,26 @@
                 colorIdx++;
                 el.appendChild(span);
             }
+        })();
+    </script>
+
+    <!-- Fade cards up as they scroll into view (matches hero's intro feel) -->
+    <script>
+        (function() {
+            const els = document.querySelectorAll('.fade-up');
+            if (!('IntersectionObserver' in window)) {
+                els.forEach(el => el.classList.add('is-visible'));
+                return;
+            }
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            els.forEach(el => io.observe(el));
         })();
     </script>
 
