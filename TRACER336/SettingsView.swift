@@ -492,5 +492,7 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(recorder: AudioRecorder(), onOpenLogs: {})
+    // forPreview skips CoreAudio listener registration + temp folder ops so
+    // canvas re-renders are fast and don't pollute real audio system state.
+    SettingsView(recorder: AudioRecorder(forPreview: true), onOpenLogs: {})
 }

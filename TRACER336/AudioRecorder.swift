@@ -156,8 +156,12 @@ class AudioRecorder: NSObject, ObservableObject {
     private var restartAttempts = 0
     private let maxRestartAttempts = 3
     
-    override init() {
+    /// - Parameter forPreview: When true, skip all real-world setup (temp folder
+    ///   creation, chunk wipe, CoreAudio device listener). Use this from SwiftUI
+    ///   `#Preview` blocks so canvas re-renders don't touch real audio APIs.
+    init(forPreview: Bool = false) {
         super.init()
+        guard !forPreview else { return }
         setupFolder()
         clearFolder()
         startDeviceMonitoring()
