@@ -157,8 +157,7 @@ struct SettingsView: View {
                     Text("Quit")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white)
-                        .frame(height: 15)
-                        .padding(.vertical, 6)
+                        .frame(height: 23)
                         .padding(.horizontal, 12)
                         .background(Capsule().fill(.red.opacity(0.8)))
                 }
