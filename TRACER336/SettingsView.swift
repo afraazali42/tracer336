@@ -83,7 +83,7 @@ struct SettingsView: View {
     
     // ── Local State ─────────────────────────────────────────────────────────
     
-    @State private var availableDevices: [AudioInputDevice] = AudioRecorder.availableInputDevices()
+    @State private var availableDevices: [AudioInputDevice] = []
     @State private var retentionText: String = "\(AppSettings.retentionHours)"
     
     // ── Constants ───────────────────────────────────────────────────────────
@@ -458,17 +458,28 @@ struct SettingsView: View {
     
     /// Refresh the list of available audio input devices.
     /// If the saved device ID isn't found, try to match by name (device IDs
-    /// can change between reboots). Only resets to system default if neither matches.
+    /// can change between reboots). Only resets to system default if neither
+    /// matches.
+    ///
+    /// The CoreAudio enumeration runs on a background queue so it can't
+    /// contend with the audio I/O work loop on the main thread (which would
+    /// cause audible crackles in concurrent playback on systems with HAL
+    /// plugins like SoundSource).
     private func refreshDevices() {
-        availableDevices = AudioRecorder.availableInputDevices()
-        
-        if inputDeviceID != 0 && !availableDevices.contains(where: { Int($0.id) == inputDeviceID }) {
-            // Saved ID not found — try matching by name
-            if let savedName = AppSettings.inputDeviceName,
-               let match = availableDevices.first(where: { $0.name == savedName }) {
-                inputDeviceID = Int(match.id)
-            } else {
-                inputDeviceID = 0
+        DispatchQueue.global(qos: .userInitiated).async {
+            let devices = AudioRecorder.availableInputDevices()
+            DispatchQueue.main.async {
+                self.availableDevices = devices
+
+                if self.inputDeviceID != 0 && !devices.contains(where: { Int($0.id) == self.inputDeviceID }) {
+                    // Saved ID not found — try matching by name
+                    if let savedName = AppSettings.inputDeviceName,
+                       let match = devices.first(where: { $0.name == savedName }) {
+                        self.inputDeviceID = Int(match.id)
+                    } else {
+                        self.inputDeviceID = 0
+                    }
+                }
             }
         }
     }

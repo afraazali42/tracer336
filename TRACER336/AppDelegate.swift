@@ -41,6 +41,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     var overlayWindow: OverlayWindow?
     var recorder = AudioRecorder()
     var popover: NSPopover?
+    /// Cached hosting controller so we can swap its rootView with fresh state
+    /// on each open instead of rebuilding the whole SwiftUI tree.
+    var popoverHostingController: NSHostingController<MenuPopoverView>?
     var settingsWindow: NSWindow?
     var logsWindow: NSWindow?
     var menuBarIcon: MenuBarIconView?
@@ -150,9 +153,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             Log.info("Global hotkey triggered Quick Save", category: .export)
         }
         HotkeyManager.shared.register()
-        
+
         // On first launch (or lost bookmark), prompt for save folder
         promptForSaveFolderIfNeeded()
+
+        // Pre-warm popover + settings window so the first user click doesn't
+        // pay the heavy SwiftUI+NSHostingController allocation cost. That cost
+        // on the click hot path coincides with the audio I/O work loop and on
+        // systems with HAL plugins (SoundSource etc.) it can push the work
+        // loop past its deadline, causing audible crackles in concurrent
+        // playback. Deferred to next runloop tick so launch UI is responsive.
+        DispatchQueue.main.async { [weak self] in
+            self?.buildPopover()
+            self?.buildSettingsWindow()
+        }
     }
     
     /// Present a folder picker if we don't have a valid sandbox bookmark.
@@ -362,16 +376,51 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             popover.performClose(nil)
             return
         }
-        
+
         guard let button = statusItem.button else { return }
-        
-        let popover = NSPopover()
-        popover.contentSize = NSSize(width: 220, height: 140)
-        popover.behavior = .transient  // Closes when user clicks outside
-        popover.delegate = self
-        popover.animates = true
-        
-        let popoverView = MenuPopoverView(
+
+        // If the popover wasn't pre-warmed yet, build it now. Otherwise just
+        // refresh its rootView with the current state — SwiftUI diffs/applies
+        // the changes much faster than allocating a new NSHostingController.
+        if popover == nil {
+            buildPopover()
+        } else {
+            popoverHostingController?.rootView = makePopoverView()
+        }
+
+        Log.info("[Activation] popover opening", category: .audio)
+        popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        Log.info("[Activation] popover closed", category: .audio)
+        // Keep the popover and its hosting controller cached — next open just
+        // refreshes rootView and calls show(). Skipping the allocation reduces
+        // main-thread work on the click hot path, which is the path that
+        // overloads the audio I/O work loop on systems with HAL plugins.
+    }
+
+    /// Lazy-build the cached popover + hosting controller. Called either by
+    /// the launch pre-warm or, as a fallback, by the first togglePopover.
+    private func buildPopover() {
+        let p = NSPopover()
+        p.contentSize = NSSize(width: 220, height: 140)
+        p.behavior = .transient  // Closes when user clicks outside
+        p.delegate = self
+        p.animates = true
+
+        let hosting = NSHostingController(rootView: makePopoverView())
+        p.contentViewController = hosting
+
+        self.popover = p
+        self.popoverHostingController = hosting
+    }
+
+    /// Build a MenuPopoverView with current state. Called both at first build
+    /// and on each subsequent open to refresh dynamic values (recording state,
+    /// device error, unresolved log errors).
+    private func makePopoverView() -> MenuPopoverView {
+        MenuPopoverView(
             isRecording: recorder.isRecording,
             hasDeviceError: recorder.isDeviceDisconnected || recorder.engineFailed,
             hasLogErrors: Log.shared.hasUnresolvedErrors,
@@ -382,32 +431,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
                 } else {
                     self.recorder.resumeRecording()
                 }
-                popover.performClose(nil)
+                self.popover?.performClose(nil)
             },
             onSaveAll: { [weak self] in
-                popover.performClose(nil)
                 guard let self = self else { return }
+                self.popover?.performClose(nil)
                 let totalMinutes = max(1, Int(ceil(Double(self.recorder.availableSeconds) / 60.0)))
                 self.recorder.exportLast(minutes: totalMinutes, forceAutoSave: true)
             },
             onSettings: { [weak self] in
-                popover.performClose(nil)
+                self?.popover?.performClose(nil)
                 self?.openSettings()
             },
             onQuit: {
                 NSApp.terminate(nil)
             }
         )
-        popover.contentViewController = NSHostingController(rootView: popoverView)
-        
-        self.popover = popover
-        Log.info("[Activation] popover opening", category: .audio)
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-    }
-
-    func popoverDidClose(_ notification: Notification) {
-        Log.info("[Activation] popover closed", category: .audio)
-        popover = nil
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -722,20 +761,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     // ─────────────────────────────────────────────────────────────────────────
     
     @objc func openSettings() {
+        // If pre-warm hasn't run yet, build now as a fallback.
         if settingsWindow == nil {
-            let view = SettingsView(recorder: recorder, onOpenLogs: { [weak self] in
-                self?.openLogs()
-            })
-            let hostingController = NSHostingController(rootView: view)
-            
-            let window = NSWindow(contentViewController: hostingController)
-            window.title = "TRACER336"
-            window.styleMask = [.titled, .closable]
-            window.isReleasedWhenClosed = false
-            window.delegate = self
-            window.center()
-            
-            settingsWindow = window
+            buildSettingsWindow()
         }
         
         // Temporarily show in dock so the window can receive focus
@@ -780,6 +808,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     // MARK: - Logs Window
     // ─────────────────────────────────────────────────────────────────────────────
     
+    /// Lazy-build the settings window + its SwiftUI hosting controller. Done
+    /// once, then makeKeyAndOrderFront for every show. Called by launch
+    /// pre-warm or as a fallback in openSettings.
+    private func buildSettingsWindow() {
+        let view = SettingsView(recorder: recorder, onOpenLogs: { [weak self] in
+            self?.openLogs()
+        })
+        let hostingController = NSHostingController(rootView: view)
+
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "TRACER336"
+        window.styleMask = [.titled, .closable]
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.center()
+
+        settingsWindow = window
+    }
+
     func openLogs() {
         if logsWindow == nil {
             let logsView = LogsView()
