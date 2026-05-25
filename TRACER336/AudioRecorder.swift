@@ -56,6 +56,7 @@
 import AVFoundation
 import AppKit
 import CoreAudio
+import UniformTypeIdentifiers
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MARK: - Audio Input Device Model

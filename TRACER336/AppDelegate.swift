@@ -45,6 +45,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     var logsWindow: NSWindow?
     var menuBarIcon: MenuBarIconView?
     var initialLocation: NSPoint?
+
+    /// Cached success sound. Loaded once at launch so we don't hit disk on every
+    /// export. Volume is preset; just call .play() (after .stop() for re-trigger).
+    private var successSound: NSSound?
     
     /// Combine subscription for observing recording state + device connection.
     private var recordingObserver: AnyCancellable?
@@ -91,7 +95,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         
         // Set up notification system (registers categories and delegate)
         NotificationManager.shared.setup()
-        
+
+        // Preload the success sound — avoids hitting disk + allocating NSSound
+        // on every export. byReference: true makes NSSound stream from the bundle
+        // instead of loading the entire WAV into memory.
+        if let soundURL = Bundle.main.url(forResource: "successful_audio_capture", withExtension: "wav") {
+            successSound = NSSound(contentsOf: soundURL, byReference: true)
+            successSound?.volume = 0.7
+        }
+
         // Observe recording state and device connection to update the menu bar icon.
         // Uses combineLatest so the icon reflects whichever state takes priority:
         //   error (red) > paused (dimmed) > active (full white)
@@ -111,14 +123,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // On successful export: play the icon pulse animation and optional sound
         recorder.onExportSuccess = { [weak self] in
             self?.menuBarIcon?.pulseSuccess()
-            
-            // Play the bundled success sound (independent of notifications)
+
+            // Play the bundled success sound (independent of notifications).
+            // stop() before play() so a fast-fire export still plays from start.
             if AppSettings.soundEnabled {
-                if let soundURL = Bundle.main.url(forResource: "successful_audio_capture", withExtension: "wav") {
-                    let sound = NSSound(contentsOf: soundURL, byReference: true)
-                    sound?.volume = 0.7
-                    sound?.play()
-                }
+                self?.successSound?.stop()
+                self?.successSound?.play()
             }
         }
         

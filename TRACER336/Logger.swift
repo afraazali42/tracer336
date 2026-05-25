@@ -169,8 +169,11 @@ class Log: ObservableObject {
         
         let entry = LogEntry(timestamp: Date(), level: level, category: category, message: message)
         
-        // Print to console immediately (for Xcode)
+        // Print to console immediately (for Xcode). Debug builds only — release
+        // builds keep entries in the in-memory buffer without spamming stdout.
+        #if DEBUG
         print(entry.displayString)
+        #endif
         
         // Append to buffer on the serial queue, then publish on main
         queue.async { [weak self] in

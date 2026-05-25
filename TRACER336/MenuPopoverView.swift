@@ -41,6 +41,13 @@ struct MenuPopoverView: View {
     
     /// Fixed width for the leading icon column so labels align vertically.
     private let iconWidth: CGFloat = 20
+
+    /// "v" + CFBundleShortVersionString, e.g. "v1.0". Reads from Info.plist so it
+    /// stays in sync with the MARKETING_VERSION build setting.
+    private var appVersionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        return "v\(version)"
+    }
     
     // ── Body ────────────────────────────────────────────────────────────────
     
@@ -54,7 +61,7 @@ struct MenuPopoverView: View {
                 Text("TRACER336")
                     .font(.headline)
                 Spacer()
-                Text("v1.0")
+                Text(appVersionString)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
