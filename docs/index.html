@@ -287,27 +287,32 @@
 
         .features { padding: 60px 0; }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1px;
-            background: var(--border);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
+        .bullets {
+            list-style: none;
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0;
+            position: relative;
         }
 
-        .feature {
-            padding: 32px;
-            background: var(--bg);
-            transition: background 0.3s;
+        .bullets li {
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.7;
+            padding: 10px 0 10px 22px;
+            position: relative;
         }
 
-        .feature:hover { background: var(--bg-raised); }
-
-        .feature-icon { font-size: 20px; margin-bottom: 16px; display: block; }
-        .feature h3 { font-size: 15px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.01em; }
-        .feature p { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
+        .bullets li::before {
+            content: "·";
+            position: absolute;
+            left: 6px;
+            top: 6px;
+            font-size: 20px;
+            line-height: 1;
+            color: var(--text-dim);
+        }
 
         /* ── OSS ──────────────────────────────────────────── */
 
@@ -455,27 +460,13 @@
     <!-- Features -->
     <section class="features">
         <div class="container">
-            <div class="features-grid">
-                <div class="feature">
-                    <span class="feature-icon">🔒</span>
-                    <h3>Private by design</h3>
-                    <p>All audio stays on your Mac. No cloud. No accounts. No internet required. Ever.</p>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">🪶</span>
-                    <h3>Featherweight</h3>
-                    <p>Under 5 MB. Uses AAC compression at 32 kbps — 8 hours of buffer fits in ~126 MB of memory.</p>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">🎯</span>
-                    <h3>One gesture</h3>
-                    <p>Drag distance equals time. No menus to navigate, no buttons to click. Muscle memory in minutes.</p>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">🔧</span>
-                    <h3>Developer-friendly</h3>
-                    <p>Fully documented Swift codebase. Built-in logging system. Fork and extend.</p>
-                </div>
+            <div class="oss-card">
+                <ul class="bullets">
+                    <li>all audio stays on your Mac. no cloud, no accounts, no internet, ever.</li>
+                    <li>under 2 MB on disk. 8 hours of buffered audio fits in ~126 MB of RAM.</li>
+                    <li>drag from the menu bar icon to save. distance = time. no menus, no buttons.</li>
+                    <li>fully documented Swift codebase. fork it and go nuts.</li>
+                </ul>
             </div>
         </div>
     </section>
