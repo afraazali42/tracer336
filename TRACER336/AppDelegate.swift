@@ -300,7 +300,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             keyEquivalent: "q"
         ))
 
+        // macOS auto-adds SF Symbol icons to menu items for standard actions
+        // (info circle for About, X for Quit, etc.). Strip them recursively so
+        // the menu stays clean and text-only.
+        stripAutoIcons(from: mainMenu)
+
         NSApp.mainMenu = mainMenu
+    }
+
+    /// Recursively set `image = nil` on every NSMenuItem in the given menu and
+    /// its submenus. Suppresses the auto-applied SF Symbol icons that macOS
+    /// attaches to items whose selector matches a known system action.
+    private func stripAutoIcons(from menu: NSMenu) {
+        for item in menu.items {
+            item.image = nil
+            if let submenu = item.submenu {
+                stripAutoIcons(from: submenu)
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
