@@ -7,13 +7,14 @@
 // persistence and two-way binding.
 //
 // LAYOUT:
-//   Row 1: Active toggle + Launch at Login toggle
-//   Row 2: Input device picker (+ device disconnection warning)
-//   Row 3: Record duration (hours) + Keep Buffer toggle
-//   Row 4: Save location + Always Ask toggle
-//   Row 5: Export format (M4A / WAV)
-//   Row 6: Quality (AAC bitrate) + estimated file size
-//   Row 7: Notifications toggle
+//   Row 1: Active toggle + Launch at Login toggle + Quit
+//   Row 2: Input device picker (+ device disconnection / mic-denied warnings)
+//   Row 3: Record duration (hours) + Clear Buffer + Keep Buffer toggle
+//   Row 4: Quality (AAC bitrate) — disabled when format is WAV
+//   Row 5: Export format (M4A / WAV) + estimated Total File Size
+//   Row 6: Save location + Always Ask toggle
+//   Row 7: Sounds + Notifications + Logs button
+//   Row 8: Hotkey recorder + Source + Support
 //
 // DEVICE ERROR HANDLING:
 //   When the selected audio device is disconnected (recorder.isDeviceDisconnected),
@@ -285,8 +286,37 @@ struct SettingsView: View {
             }
             
             Divider()
+
+            // ── Row 4: Quality (AAC Bitrate) ────────────────────────────
+            Picker("Quality:", selection: $bitRate) {
+                ForEach(bitRateOptions, id: \.value) { option in
+                    Text(option.label).tag(option.value)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(exportFormat == "wav")
+            .opacity(exportFormat == "wav" ? 0.5 : 1.0)
             
-            // ── Row 4: Save Location + Always Ask ───────────────────────
+            Divider()
+
+            // ── Row 5: Format + Total File Size ─────────────────────────
+            HStack {
+                Picker("Format:", selection: $exportFormat) {
+                    Text("Lightweight — M4A").tag("m4a")
+                    Text("Compatible — WAV").tag("wav")
+                }
+                .pickerStyle(.menu)
+
+                Spacer()
+
+                Text("Total File Size: \(storageText)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            // ── Row 6: Save Location + Always Ask ───────────────────────
             HStack {
                 Text("Save to:")
                 Button(action: chooseSaveFolder) {
@@ -310,7 +340,7 @@ struct SettingsView: View {
                             panel.directoryURL = URL(fileURLWithPath: saveFolder)
                             panel.prompt = "Use This Folder"
                             panel.message = "Select the folder for auto-saving recordings."
-                            
+
                             if panel.runModal() == .OK, let url = panel.url {
                                 saveFolder = url.path
                                 AppSettings.setSaveFolderWithBookmark(url)
@@ -324,38 +354,9 @@ struct SettingsView: View {
                 ))
                 .toggleStyle(.switch)
             }
-            
+
             Divider()
-            
-            // ── Row 5: Quality (AAC Bitrate) ────────────────────────────
-            Picker("Quality:", selection: $bitRate) {
-                ForEach(bitRateOptions, id: \.value) { option in
-                    Text(option.label).tag(option.value)
-                }
-            }
-            .pickerStyle(.menu)
-            .disabled(exportFormat == "wav")
-            .opacity(exportFormat == "wav" ? 0.5 : 1.0)
-            
-            Divider()
-            
-            // ── Row 6: Format + Total File Size ─────────────────────────
-            HStack {
-                Picker("Format:", selection: $exportFormat) {
-                    Text("Lightweight — M4A").tag("m4a")
-                    Text("Compatible — WAV").tag("wav")
-                }
-                .pickerStyle(.menu)
-                
-                Spacer()
-                
-                Text("Total File Size: \(storageText)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Divider()
-            
+
             // ── Row 7: Sounds + Notifications ───────────────────────────
             HStack {
                 Toggle("Sounds", isOn: $soundEnabled)
