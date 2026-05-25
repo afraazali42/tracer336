@@ -32,9 +32,9 @@ mkdir -p "$OUT_DIR"
 SIZE=400        # Final GIF size in px
 DURATION=2.0    # Seconds of ffmpeg-rendered motion per full rotation
 FPS=30          # Source frame rate (kept smooth — playback speed is set below)
-PLAYBACK_DELAY=6  # Centiseconds per frame in final GIF (gifsicle --delay).
-                  # Higher = slower spin. 6 ≈ 16.7fps display, so a 2s source
-                  # animation plays back over ~3.6s (slower, calmer feel).
+PLAYBACK_DELAY=10 # Centiseconds per frame in final GIF (gifsicle --delay).
+                  # Higher = slower spin. 10 ≈ 10fps display, so a 2s source
+                  # animation plays back over ~5.9s per rotation (calm).
 
 OUTER_SVG="$ASSETS_SRC/MenuBarOuterRing.imageset/OuterRing.svg"
 MIDDLE_SVG="$ASSETS_SRC/MenuBarMiddleRing.imageset/MiddleRing.svg"
@@ -78,14 +78,13 @@ ffmpeg -y -loglevel error -stats \
   -loop 0 \
   "$OUT_DIR/icon-spin.gif"
 
-# ─── Slow playback + lossy compress with gifsicle ─────────────────────────────
+# ─── Slow playback + lossless optimize with gifsicle ──────────────────────────
 # Sets each frame's display delay to PLAYBACK_DELAY centiseconds, then runs
-# the maximum optimizer with mild lossy compression. Lossy=80 keeps the rings
-# visually clean while shaving ~30% off file size on this kind of high-color
-# animated content.
+# the maximum lossless optimizer. We deliberately avoid --lossy because it
+# softens the crisp grey ring edges in a visible way.
 if command -v gifsicle >/dev/null 2>&1; then
-  echo "→ Slowing playback + optimizing with gifsicle..."
-  gifsicle --delay "$PLAYBACK_DELAY" -O3 --lossy=80 -b "$OUT_DIR/icon-spin.gif"
+  echo "→ Slowing playback + lossless optimizing with gifsicle..."
+  gifsicle --delay "$PLAYBACK_DELAY" -O3 -b "$OUT_DIR/icon-spin.gif"
 else
   echo "⚠ gifsicle not installed — skipping optimization. brew install gifsicle"
 fi
