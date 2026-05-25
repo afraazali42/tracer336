@@ -290,28 +290,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             keyEquivalent: "q"
         ))
 
-        // macOS auto-adds SF Symbol icons to menu items for standard actions
-        // (info circle for About, X for Quit, etc.). Strip them recursively so
-        // the menu stays clean and text-only.
-        stripAutoIcons(from: mainMenu)
+        // macOS auto-applies SF Symbol glyphs to menu items whose selector
+        // matches a known system action. We previously tried to suppress them
+        // by assigning an empty NSImage but AppKit reserves the icon column
+        // anyway, leaving an empty gap on the left. Keep the system glyphs —
+        // they're consistent with the system design and avoid that gap.
 
         NSApp.mainMenu = mainMenu
-    }
-
-    /// Recursively suppress the auto-applied SF Symbol glyphs that macOS Tahoe
-    /// attaches to menu items whose selector matches a known system action
-    /// (e.g. info-circle for About, X for Quit, scissors for Cut). Setting
-    /// `image = nil` is not enough — AppKit reapplies the glyph at draw time —
-    /// so we assign a zero-sized empty image instead, which AppKit treats as
-    /// "user-supplied" and respects.
-    private func stripAutoIcons(from menu: NSMenu) {
-        let blank = NSImage(size: .zero)
-        for item in menu.items {
-            item.image = blank
-            if let submenu = item.submenu {
-                stripAutoIcons(from: submenu)
-            }
-        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
