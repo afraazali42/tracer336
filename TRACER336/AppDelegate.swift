@@ -117,13 +117,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // Observe recording state and device connection to update the menu bar icon.
         // Uses combineLatest so the icon reflects whichever state takes priority:
         //   error (red) > paused (dimmed) > active (full white)
-        // "error" covers both device disconnection and engine failure — they're
-        // visually identical (red icon) but have separate messaging in Settings.
+        // "error" covers device disconnection, engine failure, and microphone
+        // permission denied — visually identical (red icon) but each has its
+        // own distinct messaging in Settings.
         recordingObserver = recorder.$isRecording
-            .combineLatest(recorder.$isDeviceDisconnected, recorder.$engineFailed)
+            .combineLatest(recorder.$isDeviceDisconnected, recorder.$engineFailed, recorder.$microphonePermissionDenied)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording, isDisconnected, engineFailed in
-                if isDisconnected || engineFailed {
+            .sink { [weak self] isRecording, isDisconnected, engineFailed, micDenied in
+                if isDisconnected || engineFailed || micDenied {
                     self?.menuBarIcon?.setState(.error)
                 } else if isRecording {
                     self?.menuBarIcon?.setState(.active)
@@ -422,7 +423,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     private func makePopoverView() -> MenuPopoverView {
         MenuPopoverView(
             isRecording: recorder.isRecording,
-            hasDeviceError: recorder.isDeviceDisconnected || recorder.engineFailed,
+            hasDeviceError: recorder.isDeviceDisconnected || recorder.engineFailed || recorder.microphonePermissionDenied,
             hasLogErrors: Log.shared.hasUnresolvedErrors,
             onToggleRecording: { [weak self] in
                 guard let self = self else { return }
@@ -451,6 +452,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
 
     func applicationDidBecomeActive(_ notification: Notification) {
         Log.info("[Activation] app became active", category: .audio)
+        // Catch the user coming back from System Settings after toggling
+        // microphone access. If they just granted it, recorder auto-starts.
+        recorder.refreshMicrophonePermission()
     }
 
     func applicationWillResignActive(_ notification: Notification) {

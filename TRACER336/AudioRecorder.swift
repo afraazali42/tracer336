@@ -136,6 +136,12 @@ class AudioRecorder: NSObject, ObservableObject {
     /// device choice (Bluetooth glitch, sample rate change, system audio reset,
     /// etc.). User must toggle Active off/on or pick a different input to retry.
     @Published private(set) var engineFailed = false
+
+    /// Whether the user has denied (or revoked) microphone access in macOS's
+    /// privacy settings. When true, recording is impossible until the user
+    /// enables the permission in System Settings → Privacy & Security →
+    /// Microphone. UI surfaces this with a deep-link button to that pane.
+    @Published private(set) var microphonePermissionDenied = false
     
     // ── Callbacks ───────────────────────────────────────────────────────────
     
@@ -240,6 +246,64 @@ class AudioRecorder: NSObject, ObservableObject {
     /// Sets up the audio tap on the engine's input node, opens the first chunk
     /// file, and starts a 60-second timer for chunk rotation.
     func startRecording() {
+        // Gate engine setup on the user's microphone privacy permission.
+        // If not yet asked, prompt; if denied/restricted, set the flag and
+        // bail (UI shows a deep-link to System Settings → Microphone); if
+        // authorized, proceed directly.
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch status {
+        case .authorized:
+            microphonePermissionDenied = false
+            startEngineWithMicrophoneAccess()
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    if granted {
+                        self.microphonePermissionDenied = false
+                        self.startEngineWithMicrophoneAccess()
+                    } else {
+                        self.microphonePermissionDenied = true
+                        self.isRecording = false
+                        Log.warning("Microphone access denied at prompt — recording disabled until enabled in System Settings", category: .audio)
+                    }
+                }
+            }
+        case .denied, .restricted:
+            microphonePermissionDenied = true
+            isRecording = false
+            Log.warning("Microphone access not granted — recording disabled. Enable in System Settings → Privacy & Security → Microphone.", category: .audio)
+        @unknown default:
+            microphonePermissionDenied = true
+            isRecording = false
+        }
+    }
+
+    /// Recheck the current microphone authorization status and update the
+    /// published flag. If the user just granted access after being blocked,
+    /// auto-start recording so they don't have to find a toggle. Call from
+    /// `applicationDidBecomeActive` so we catch the user coming back from
+    /// System Settings.
+    func refreshMicrophonePermission() {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        let nowDenied = (status == .denied || status == .restricted)
+        let nowAuthorized = (status == .authorized)
+        let wasBlocked = microphonePermissionDenied
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.microphonePermissionDenied = nowDenied
+
+            if wasBlocked && nowAuthorized && !self.isRecording {
+                Log.info("Microphone access granted — auto-starting recording", category: .audio)
+                self.startRecording()
+            }
+        }
+    }
+
+    /// The full engine-start path, gated by `startRecording()`'s permission
+    /// check. Don't call this directly — it skips the privacy gate.
+    private func startEngineWithMicrophoneAccess() {
         // Apply saved input device preference (0 = system default).
         // CoreAudio device IDs can change between reboots/rebuilds, so if
         // the saved ID isn't found, fall back to matching by device name.
@@ -726,8 +790,9 @@ class AudioRecorder: NSObject, ObservableObject {
         Log.warning("Audio engine configuration changed", category: .audio)
         
         // If the engine stopped due to the config change, try to restart.
-        // Skip if we've already given up (engineFailed) — the user has to act.
-        if !engine.isRunning && isRecording && !isIntentionallyPaused && !isDeviceDisconnected && !engineFailed {
+        // Skip if we've already given up (engineFailed) or can't access the
+        // mic — the user has to act in those cases.
+        if !engine.isRunning && isRecording && !isIntentionallyPaused && !isDeviceDisconnected && !engineFailed && !microphonePermissionDenied {
             Log.warning("Engine stopped after config change — attempting recovery", category: .audio)
             attemptEngineRestart()
         }
@@ -736,7 +801,7 @@ class AudioRecorder: NSObject, ObservableObject {
     /// Periodic check that the engine is still alive.
     private func checkEngineHealth() {
         // Only check if we expect the engine to be running
-        guard isRecording && !isIntentionallyPaused && !isDeviceDisconnected && !engineFailed else { return }
+        guard isRecording && !isIntentionallyPaused && !isDeviceDisconnected && !engineFailed && !microphonePermissionDenied else { return }
         
         if !engine.isRunning {
             Log.warning("Engine health check: engine unexpectedly stopped", category: .audio)
@@ -766,7 +831,7 @@ class AudioRecorder: NSObject, ObservableObject {
             guard let self = self else { return }
             
             // Double-check we still need to restart
-            guard !self.engine.isRunning && !self.isIntentionallyPaused && !self.isDeviceDisconnected && !self.engineFailed else { return }
+            guard !self.engine.isRunning && !self.isIntentionallyPaused && !self.isDeviceDisconnected && !self.engineFailed && !self.microphonePermissionDenied else { return }
             
             self.startNewChunk()
             

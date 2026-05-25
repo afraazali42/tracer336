@@ -200,7 +200,23 @@ struct SettingsView: View {
             }
             
             // Device status warnings
-            if recorder.isDeviceDisconnected {
+            if recorder.microphonePermissionDenied {
+                HStack(spacing: 4) {
+                    Image(systemName: "mic.slash.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                    Text("Microphone access denied.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    Button("Open System Settings") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .buttonStyle(.link)
+                    .font(.caption)
+                }
+            } else if recorder.isDeviceDisconnected {
                 HStack(spacing: 4) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.red)
