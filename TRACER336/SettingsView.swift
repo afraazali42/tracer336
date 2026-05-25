@@ -155,10 +155,11 @@ struct SettingsView: View {
                     NSApp.terminate(nil)
                 }) {
                     Text("Quit")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white)
-                        .frame(height: 22)
-                        .padding(.horizontal, 10)
+                        .frame(height: 15)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
                         .background(Capsule().fill(.red.opacity(0.8)))
                 }
                 .buttonStyle(.plain)
@@ -356,8 +357,11 @@ struct SettingsView: View {
             
             Divider()
             
-            // ── Row 7: Notifications + Sound ───────────────────────────
+            // ── Row 7: Sounds + Notifications ───────────────────────────
             HStack {
+                Toggle("Sounds", isOn: $soundEnabled)
+                    .toggleStyle(.switch)
+                Spacer()
                 Toggle("Notifications", isOn: Binding(
                     get: { notificationsEnabled },
                     set: { newValue in
@@ -372,9 +376,6 @@ struct SettingsView: View {
                     }
                 ))
                 .toggleStyle(.switch)
-                Spacer()
-                Toggle("Sound", isOn: $soundEnabled)
-                    .toggleStyle(.switch)
                 
                 // Logs button with red badge for unresolved errors
                 Button(action: { onOpenLogs?() }) {
