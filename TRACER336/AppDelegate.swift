@@ -99,7 +99,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // Preload the success sound — avoids hitting disk + allocating NSSound
         // on every export. byReference: true makes NSSound stream from the bundle
         // instead of loading the entire WAV into memory.
-        if let soundURL = Bundle.main.url(forResource: "successful_audio_capture", withExtension: "wav") {
+        if let soundURL = Bundle.main.url(forResource: "successful_audio_capture", withExtension: "m4a") {
             successSound = NSSound(contentsOf: soundURL, byReference: true)
             successSound?.volume = 0.7
         }
