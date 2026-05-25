@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- App sandbox (required for distribution outside the App Store too) -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Microphone access for the recording engine -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+
+    <!-- Read/write to user-selected folders (Save folder bookmarks) -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!--
+        Mach-lookup exception for com.apple.audioanalyticsd.
+
+        Without this, CoreAudio's internal audio-metrics path tries to
+        connect to the system audioanalyticsd daemon on every audio op,
+        the sandbox blocks it, and CoreAudio logs:
+
+            PRECONDITION FAILURE: Process is sandboxed but
+            'com.apple.security.exception.mach-lookup.global-name'
+            doesn't contain 'com.apple.audioanalyticsd'.
+
+        The error-handling path can take long enough on a hot codepath
+        to push the HAL I/O work loop past its deadline, causing
+        audible crackles in concurrent playback. Allowing the lookup
+        lets the metrics path run cleanly without error chains.
+
+        Privacy note: this is *Apple's* system telemetry daemon (Siri /
+        AirPods / system audio metrics), not third-party. The data it
+        gathers is usage statistics, not actual audio content. We do
+        not call audioanalyticsd directly — CoreAudio does so internally
+        as part of normal operation.
+    -->
+    <key>com.apple.security.exception.mach-lookup.global-name</key>
+    <array>
+        <string>com.apple.audioanalyticsd</string>
+    </array>
+</dict>
+</plist>
