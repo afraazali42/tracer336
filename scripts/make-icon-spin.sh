@@ -29,8 +29,12 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 mkdir -p "$OUT_DIR"
 
-SIZE=400  # Final GIF size in px
-DURATION=2.0  # Seconds per full rotation
+SIZE=400        # Final GIF size in px
+DURATION=2.0    # Seconds of ffmpeg-rendered motion per full rotation
+FPS=30          # Source frame rate (kept smooth — playback speed is set below)
+PLAYBACK_DELAY=6  # Centiseconds per frame in final GIF (gifsicle --delay).
+                  # Higher = slower spin. 6 ≈ 16.7fps display, so a 2s source
+                  # animation plays back over ~3.6s (slower, calmer feel).
 
 OUTER_SVG="$ASSETS_SRC/MenuBarOuterRing.imageset/OuterRing.svg"
 MIDDLE_SVG="$ASSETS_SRC/MenuBarMiddleRing.imageset/MiddleRing.svg"
@@ -50,27 +54,41 @@ for layer in outer middle center; do
 done
 
 # ─── Compose rotating animation with ffmpeg ───────────────────────────────────
-# Each layer is rotated independently using ffmpeg's rotate filter. Angle is
-# expressed as a function of time `t`: `t*PI` gives one full rotation in 2sec.
+# Each layer is rotated independently using ffmpeg's rotate filter. For a
+# seamless loop we need a full 2π rotation by t=DURATION, so angular rate is
+# 2π/DURATION rad/sec → expression t*2*PI/D.
 # Outer goes CCW (negative angle), middle goes CW (positive), center is static.
 echo "→ Compositing animation..."
+RATE_EXPR="2*PI/${DURATION}"
 ffmpeg -y -loglevel error -stats \
   -loop 1 -t "$DURATION" -i "$TMP_DIR/outer.png"  \
   -loop 1 -t "$DURATION" -i "$TMP_DIR/middle.png" \
   -loop 1 -t "$DURATION" -i "$TMP_DIR/center.png" \
   -filter_complex "
-    [0:v]format=rgba,rotate=-t*PI:c=none:ow=${SIZE}:oh=${SIZE}[outer];
-    [1:v]format=rgba,rotate=t*PI:c=none:ow=${SIZE}:oh=${SIZE}[middle];
+    [0:v]format=rgba,rotate=-t*${RATE_EXPR}:c=none:ow=${SIZE}:oh=${SIZE}[outer];
+    [1:v]format=rgba,rotate=t*${RATE_EXPR}:c=none:ow=${SIZE}:oh=${SIZE}[middle];
     [2:v]format=rgba[center];
-    color=c=black@0:s=${SIZE}x${SIZE}:r=30,format=rgba[bg];
+    color=c=black@0:s=${SIZE}x${SIZE}:r=${FPS},format=rgba[bg];
     [bg][outer]overlay=shortest=1[a];
     [a][middle]overlay[b];
-    [b][center]overlay,fps=30,split[s0][s1];
+    [b][center]overlay,fps=${FPS},split[s0][s1];
     [s0]palettegen=stats_mode=full:reserve_transparent=1[p];
     [s1][p]paletteuse=dither=bayer:bayer_scale=4:alpha_threshold=128
   " \
   -loop 0 \
   "$OUT_DIR/icon-spin.gif"
+
+# ─── Slow playback + lossy compress with gifsicle ─────────────────────────────
+# Sets each frame's display delay to PLAYBACK_DELAY centiseconds, then runs
+# the maximum optimizer with mild lossy compression. Lossy=80 keeps the rings
+# visually clean while shaving ~30% off file size on this kind of high-color
+# animated content.
+if command -v gifsicle >/dev/null 2>&1; then
+  echo "→ Slowing playback + optimizing with gifsicle..."
+  gifsicle --delay "$PLAYBACK_DELAY" -O3 --lossy=80 -b "$OUT_DIR/icon-spin.gif"
+else
+  echo "⚠ gifsicle not installed — skipping optimization. brew install gifsicle"
+fi
 
 size=$(stat -f%z "$OUT_DIR/icon-spin.gif")
 printf "\nDone. icon-spin.gif: %6.1f KB\n" "$(echo "scale=1; $size/1024" | bc)"
