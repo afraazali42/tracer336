@@ -469,10 +469,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             
             popover?.performClose(nil)
             
-            // Create a full-screen transparent overlay window for drawing the line/dot/label
+            // Reuse the cached full-screen overlay window if we've built one
+            // already. Allocating a fresh NSWindow per gesture was a measurable
+            // chunk of main-thread work on the click hot path and contributed to
+            // the audio I/O work loop missing deadlines (crackling).
             let screen = dragScreen!
-            let window = OverlayWindow(for: screen)
-            window.makeKeyAndOrderFront(nil)
+            let window = ensureOverlayWindow(for: screen)
+            // orderFront (not makeKeyAndOrderFront) because the overlay has
+            // ignoresMouseEvents=true and can't become key — makeKey logs a
+            // warning and does no useful work.
+            window.orderFront(nil)
             overlayWindow = window
             
             // Set the overlay's anchor point (icon center) and initial cursor position
@@ -642,8 +648,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             
             initialLocation = nil
             dragScreen = nil
-            overlayWindow = nil
-            
+            // overlayWindow stays cached — the reel-back animation will
+            // orderOut the window when it completes; ensureOverlayWindow
+            // will reset alpha + state on the next gesture.
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.isDragging = false
             }
@@ -666,21 +674,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     // MARK: - Overlay Helpers
     // ─────────────────────────────────────────────────────────────────────────
     
-    /// Fade out and remove the overlay window.
+    /// Lazy-init the full-screen overlay window once and reuse it across all
+    /// drag gestures. Allocating a new NSWindow + OverlayView on every drag
+    /// was a measurable chunk of main-thread work on the click hot path; with
+    /// CoreAudio's I/O work loop running on a real-time thread alongside,
+    /// that work could push it past its deadline and cause audible glitches
+    /// in concurrent playback (the crackling).
+    ///
+    /// On reuse: match the (possibly different) drag screen's frame, reset
+    /// alpha/visual state, and cancel any in-flight animations from the
+    /// previous gesture so we start clean.
+    private func ensureOverlayWindow(for screen: NSScreen) -> OverlayWindow {
+        if let existing = overlayWindow {
+            existing.setFrame(screen.frame, display: false)
+            existing.alphaValue = 1.0
+            if let view = existing.contentView as? OverlayView {
+                view.frame = NSRect(origin: .zero, size: screen.frame.size)
+                view.cancelRubberBand()
+                view.cancelReel()
+                view.lineProgress = 0
+                view.seconds = 0
+            }
+            return existing
+        }
+        let window = OverlayWindow(for: screen)
+        overlayWindow = window
+        return window
+    }
+
+    /// Fade out the overlay window and orderOut. The window itself stays
+    /// cached so the next gesture doesn't pay the allocation cost again.
     func dismissOverlay() {
-        let window = overlayWindow
-        overlayWindow = nil
         initialLocation = nil
         dragScreen = nil
-        if let window = window {
-            NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.12
-                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-                window.animator().alphaValue = 0
-            }, completionHandler: {
-                window.orderOut(nil)
-            })
-        }
+        guard let window = overlayWindow else { return }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.12
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            window.animator().alphaValue = 0
+        }, completionHandler: {
+            window.orderOut(nil)
+        })
     }
     
     // ─────────────────────────────────────────────────────────────────────────
