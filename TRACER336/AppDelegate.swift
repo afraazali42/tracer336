@@ -88,7 +88,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Run as a menu bar accessory — no dock icon, no main window
         NSApp.setActivationPolicy(.accessory)
-        setupMainMenu()
+        // SwiftUI installs its own NSApp.mainMenu late in launch, overwriting
+        // anything we set synchronously here. Defer to the next runloop tick so
+        // our custom menu wins. (Re-applied in openSettings/openLogs too in case
+        // SwiftUI reasserts when activation policy changes to .regular.)
+        DispatchQueue.main.async { [weak self] in
+            self?.setupMainMenu()
+        }
         setupMenuBar()
         
         recorder.startRecording()
@@ -696,10 +702,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
-        
-        // Prevent the retention text field from auto-focusing
-        DispatchQueue.main.async {
-            self.settingsWindow?.makeFirstResponder(nil)
+
+        // Re-apply our custom menu — switching to .regular activation policy
+        // tends to make SwiftUI reassert its auto-generated menu bar.
+        DispatchQueue.main.async { [weak self] in
+            self?.setupMainMenu()
+            self?.settingsWindow?.makeFirstResponder(nil)
         }
     }
     
@@ -752,7 +760,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         logsWindow?.makeKeyAndOrderFront(nil)
-        
+
+        // Re-apply our custom menu (see openSettings for rationale).
+        DispatchQueue.main.async { [weak self] in
+            self?.setupMainMenu()
+        }
+
         // Opening the logs window clears the error indicator
         Log.shared.acknowledgeErrors()
     }
