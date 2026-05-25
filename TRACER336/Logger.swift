@@ -84,12 +84,15 @@ struct LogEntry: Identifiable {
 
 /// Centralized logger for TRACER336. Access via `Log.shared` or static convenience methods.
 ///
-/// The logger stores entries in an in-memory ring buffer and publishes updates
-/// via Combine. All writes are serialized on a background queue for thread safety.
+/// The logger stores entries in an in-memory ring buffer (for the live Logs
+/// window) AND appends every entry to a plain-text log file on disk (for
+/// post-crash forensics and bug reports). All writes — to memory and to disk
+/// — are serialized on a background queue for thread safety.
 ///
-/// - Note: Entries are **not** persisted to disk. They exist only for the current
-///   app session. If disk persistence is needed later, add a file writer subscriber
-///   to the `$entries` publisher.
+/// On-disk path (sandboxed):
+///   ~/Library/Containers/com.tracer336.app/Data/Library/Logs/TRACER336/tracer336.log
+/// Public via `Log.shared.logFileURL`. Rotated to `tracer336.old.log` when it
+/// exceeds 5 MB; ~10 MB of history is preserved across rotations.
 class Log: ObservableObject {
     
     // MARK: Severity Levels
