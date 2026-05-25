@@ -143,8 +143,14 @@ class Log: ObservableObject {
     var maxEntries: Int = 500
     
     /// Minimum severity level to record. Entries below this level are discarded.
-    /// Set to `.debug` during development, `.info` for release.
+    /// Debug builds default to `.debug` for verbose diagnostics during dev.
+    /// Release builds default to `.info` so the ring buffer isn't filled with
+    /// internal trace noise that ships to end users.
+    #if DEBUG
     var minimumLevel: Level = .debug
+    #else
+    var minimumLevel: Level = .info
+    #endif
     
     // MARK: Storage
     
