@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- First-visit intro toggle. Runs synchronously before <style> applies,
+         so on return visits the animations are killed before they can play
+         and the page renders instantly. Clear localStorage to see it again. -->
+    <script>
+        try {
+            if (localStorage.getItem('tracer336_visited')) {
+                document.documentElement.classList.add('no-intro');
+            } else {
+                localStorage.setItem('tracer336_visited', '1');
+            }
+        } catch (_) { /* private mode / no storage — let intro play */ }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRACER336 — Never lose what you just heard</title>
@@ -389,10 +401,19 @@
         .features .oss-card { animation: fadeUp 1s ease both 0.7s;  }
         .contact .oss-card  { animation: fadeUp 1s ease both 0.85s; }
 
+        /* Kill the intro on return visits or when the user has motion off.
+           Wobble on "i'm already tracer" is on inner spans and stays intact. */
+        .no-intro h1,
+        .no-intro .hero-quote-attr,
+        .no-intro .hero-sub,
+        .no-intro .demo,
+        .no-intro .oss .oss-card,
+        .no-intro .features .oss-card,
+        .no-intro .contact .oss-card { animation: none; }
+
         @media (prefers-reduced-motion: reduce) {
-            .oss .oss-card,
-            .features .oss-card,
-            .contact .oss-card { animation: none; }
+            h1, .hero-quote-attr, .hero-sub, .demo,
+            .oss .oss-card, .features .oss-card, .contact .oss-card { animation: none; }
         }
 
         /* ── Responsive ──────────────────────────────────── */
