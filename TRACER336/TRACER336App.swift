@@ -29,5 +29,24 @@ struct TRACER336App: App {
                 self.appDelegate.openLogs()
             })
         }
+        .commands {
+            // SwiftUI auto-generates a full standard menu bar (App menu with
+            // About/Settings/Services/Hide/Quit, plus View/Window/Help) for any
+            // App that declares a Scene. That conflicts with the custom single-
+            // menu design we build in AppDelegate.setupMainMenu(). Clear the
+            // default command groups so SwiftUI contributes nothing. (@CommandsBuilder
+            // supports max 10 items, so only the groups actually contributing
+            // menus are listed.)
+            CommandGroup(replacing: .appInfo)           { }
+            CommandGroup(replacing: .appSettings)       { }
+            CommandGroup(replacing: .systemServices)    { }
+            CommandGroup(replacing: .appVisibility)     { }
+            CommandGroup(replacing: .windowList)        { }
+            CommandGroup(replacing: .windowArrangement) { }
+            CommandGroup(replacing: .toolbar)           { }
+            CommandGroup(replacing: .sidebar)           { }
+            CommandGroup(replacing: .help)              { }
+            CommandGroup(replacing: .undoRedo)          { }
+        }
     }
 }
