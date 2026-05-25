@@ -61,11 +61,17 @@ struct LogEntry: Identifiable {
     let category: Log.Category
     let message: String
     
-    /// Formatted timestamp for display (HH:mm:ss.SSS)
+    /// Formatted timestamp for display (HH:mm:ss.SSS). Uses a single shared
+    /// DateFormatter — allocating a fresh one per call costs ~100–500μs which
+    /// is meaningful when rendering hundreds of log entries.
+    static let timestampFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss.SSS"
+        return f
+    }()
+
     var formattedTime: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter.string(from: timestamp)
+        LogEntry.timestampFormatter.string(from: timestamp)
     }
     
     /// Single-line display string for console and logs UI

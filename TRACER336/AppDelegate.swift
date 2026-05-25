@@ -244,7 +244,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     // care that Cut/Copy/Paste aren't under a menu literally named "Edit" — it
     // routes shortcuts based on the selector + key equivalent on each item.
 
+    /// Cached so the first call builds the menu once and subsequent calls
+    /// (from openSettings / openLogs after activation policy changes) just
+    /// reassign the same instance instead of allocating ~15 fresh NSMenuItems.
+    private var cachedMainMenu: NSMenu?
+
     private func setupMainMenu() {
+        // Already built — just reassign and bail.
+        if let cached = cachedMainMenu {
+            NSApp.mainMenu = cached
+            return
+        }
+
         let mainMenu = NSMenu()
 
         // ── TRACER336 menu (the only visible top-level menu) ────────────────
@@ -311,6 +322,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // anyway, leaving an empty gap on the left. Keep the system glyphs —
         // they're consistent with the system design and avoid that gap.
 
+        cachedMainMenu = mainMenu
         NSApp.mainMenu = mainMenu
     }
 
@@ -389,16 +401,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
             popoverHostingController?.rootView = makePopoverView()
         }
 
-        Log.info("[Activation] popover opening", category: .audio)
         popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
     }
 
     func popoverDidClose(_ notification: Notification) {
-        Log.info("[Activation] popover closed", category: .audio)
         // Keep the popover and its hosting controller cached — next open just
         // refreshes rootView and calls show(). Skipping the allocation reduces
-        // main-thread work on the click hot path, which is the path that
-        // overloads the audio I/O work loop on systems with HAL plugins.
+        // main-thread work on the click hot path.
     }
 
     /// Lazy-build the cached popover + hosting controller. Called either by
@@ -451,14 +460,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        Log.info("[Activation] app became active", category: .audio)
         // Catch the user coming back from System Settings after toggling
         // microphone access. If they just granted it, recorder auto-starts.
         recorder.refreshMicrophonePermission()
-    }
-
-    func applicationWillResignActive(_ notification: Notification) {
-        Log.info("[Activation] app will resign active", category: .audio)
     }
     
     // ─────────────────────────────────────────────────────────────────────────

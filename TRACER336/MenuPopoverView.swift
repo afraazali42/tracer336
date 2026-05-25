@@ -42,12 +42,12 @@ struct MenuPopoverView: View {
     /// Fixed width for the leading icon column so labels align vertically.
     private let iconWidth: CGFloat = 20
 
-    /// "v" + CFBundleShortVersionString, e.g. "v1.0". Reads from Info.plist so it
-    /// stays in sync with the MARKETING_VERSION build setting.
-    private var appVersionString: String {
+    /// "v" + CFBundleShortVersionString, e.g. "v1.0". Read from Info.plist once
+    /// at type load so we don't hit the bundle dictionary on every popover render.
+    private static let appVersionString: String = {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         return "v\(version)"
-    }
+    }()
     
     // ── Body ────────────────────────────────────────────────────────────────
     
@@ -61,7 +61,7 @@ struct MenuPopoverView: View {
                 Text("TRACER336")
                     .font(.headline)
                 Spacer()
-                Text(appVersionString)
+                Text(Self.appVersionString)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -173,24 +173,16 @@ struct MenuPopoverView: View {
 // MARK: - PulsingDot
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// A small red circle that continuously fades between full and 30% opacity.
-// Used as an attention indicator next to "Settings..." when there's a device error.
+// A small static red circle. Used as an attention indicator next to
+// "Settings..." when there's a device error. The name "PulsingDot" is
+// historical — earlier versions animated it, but a static dot reads less
+// like a frantic warning and avoids continuous CPU draw on the cached
+// popover view tree (which stays alive between opens under our caching).
 
 struct PulsingDot: View {
-    @State private var isPulsing = false
-    
     var body: some View {
         Circle()
             .fill(.red)
             .frame(width: 7, height: 7)
-            .opacity(isPulsing ? 0.3 : 1.0)
-            .animation(
-                .easeInOut(duration: 0.8)
-                .repeatForever(autoreverses: true),
-                value: isPulsing
-            )
-            .onAppear {
-                isPulsing = true
-            }
     }
 }

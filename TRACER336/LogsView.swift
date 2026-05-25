@@ -124,26 +124,78 @@ struct LogTextView: NSViewRepresentable {
     class Coordinator {
         weak var textView: NSTextView?
         weak var scrollView: NSScrollView?
-        private var lastEntryCount = 0
-        
-        /// Rebuild the attributed string from all entries and auto-scroll to bottom.
+
+        /// UUID of the most recently rendered log entry. Used as an anchor for
+        /// incremental updates — on each refresh we find this id in the new
+        /// entries array and only render anything after it.
+        private var lastRenderedId: UUID?
+
+        /// Append only the entries newer than `lastRenderedId`, or do a full
+        /// rebuild if the previous anchor is missing (Clear pressed, or buffer
+        /// rotation evicted it). Avoids re-rendering hundreds of entries when a
+        /// single new one arrives.
         func updateContent(entries: [LogEntry]) {
-            guard let textView = textView else { return }
-            
-            // Only rebuild if the entry count changed
-            guard entries.count != lastEntryCount else { return }
-            lastEntryCount = entries.count
-            
+            guard let textView = textView, let storage = textView.textStorage else { return }
+
+            // Clear case: empty entries, wipe the view.
+            guard !entries.isEmpty else {
+                if storage.length > 0 {
+                    storage.setAttributedString(NSAttributedString())
+                }
+                lastRenderedId = nil
+                return
+            }
+
+            // Find where to start appending.
+            let startIndex: Int
+            if let anchorId = lastRenderedId,
+               let anchorIdx = entries.lastIndex(where: { $0.id == anchorId }) {
+                startIndex = anchorIdx + 1
+            } else {
+                // First render OR anchor was evicted/cleared — full rebuild.
+                if storage.length > 0 {
+                    storage.setAttributedString(NSAttributedString())
+                }
+                startIndex = 0
+            }
+
+            // Nothing new to append.
+            if startIndex >= entries.count { return }
+
+            let appended = Self.buildAttributedString(for: entries[startIndex..<entries.count],
+                                                      precededByExisting: storage.length > 0)
+            storage.append(appended)
+            lastRenderedId = entries.last?.id
+
+            DispatchQueue.main.async {
+                textView.scrollToEndOfDocument(nil)
+            }
+        }
+
+        /// Build attributed string for a slice of entries. Static so the lazy
+        /// monospaced font + paragraph style allocations can be shared.
+        private static func buildAttributedString(for entries: ArraySlice<LogEntry>,
+                                                   precededByExisting: Bool) -> NSAttributedString {
             let attributed = NSMutableAttributedString()
+            let monoFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.lineSpacing = 2
-            
-            let monoFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-            
-            for (index, entry) in entries.enumerated() {
+
+            // If we're appending to existing content, start with a newline so
+            // this batch sits below the previous entries.
+            var isFirstInBatch = true
+
+            for entry in entries {
+                if !isFirstInBatch || precededByExisting {
+                    attributed.append(NSAttributedString(string: "\n", attributes: [
+                        .font: monoFont,
+                        .foregroundColor: NSColor.textColor
+                    ]))
+                }
+                isFirstInBatch = false
+
                 let color = colorForLevel(entry.level)
-                
-                // Timestamp + category in dimmed color
+
                 let prefix = "\(entry.formattedTime) [\(entry.category.rawValue)] "
                 let prefixAttrs: [NSAttributedString.Key: Any] = [
                     .font: monoFont,
@@ -151,8 +203,7 @@ struct LogTextView: NSViewRepresentable {
                     .paragraphStyle: paragraphStyle
                 ]
                 attributed.append(NSAttributedString(string: prefix, attributes: prefixAttrs))
-                
-                // Level symbol + message in severity color
+
                 let message = "\(entry.level.symbol) \(entry.message)"
                 let messageAttrs: [NSAttributedString.Key: Any] = [
                     .font: monoFont,
@@ -160,37 +211,22 @@ struct LogTextView: NSViewRepresentable {
                     .paragraphStyle: paragraphStyle
                 ]
                 attributed.append(NSAttributedString(string: message, attributes: messageAttrs))
-                
-                // Background highlight for errors and warnings
+
                 if entry.level == .error || entry.level == .warning {
                     let bgColor = entry.level == .error
                         ? NSColor.red.withAlphaComponent(0.1)
                         : NSColor.orange.withAlphaComponent(0.06)
-                    
+
                     let lineStart = attributed.length - prefix.count - message.count
                     let lineRange = NSRange(location: lineStart, length: prefix.count + message.count)
                     attributed.addAttribute(.backgroundColor, value: bgColor, range: lineRange)
                 }
-                
-                // Newline between entries
-                if index < entries.count - 1 {
-                    attributed.append(NSAttributedString(string: "\n", attributes: [
-                        .font: monoFont,
-                        .foregroundColor: NSColor.textColor
-                    ]))
-                }
             }
-            
-            textView.textStorage?.setAttributedString(attributed)
-            
-            // Auto-scroll to the bottom
-            DispatchQueue.main.async {
-                textView.scrollToEndOfDocument(nil)
-            }
+
+            return attributed
         }
-        
-        /// Map severity level to display color.
-        private func colorForLevel(_ level: Log.Level) -> NSColor {
+
+        private static func colorForLevel(_ level: Log.Level) -> NSColor {
             switch level {
             case .debug:   return NSColor.systemGray
             case .info:    return NSColor.white
