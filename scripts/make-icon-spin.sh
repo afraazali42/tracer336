@@ -37,8 +37,19 @@ FPS=20          # IMPORTANT: keep ≤ 20 so the per-frame delay stays ≥ 5cs.
                 # a "30fps" GIF actually plays at 10fps and looks jittery.
                 # 20fps with delay=5 is universally respected and smooth.
 
+# The icon has N-fold rotational symmetry: rotating by 360°/N produces the
+# same image. Since outer rotates CCW and middle rotates CW at the same
+# rate, the composite returns to a visually identical state every
+# 360°/SYMMETRY of rotation — so we only need to render and store 1/SYMMETRY
+# of a full rotation, and let the GIF loop. This is verified empirically
+# (the GIF loop point is invisible). Cuts file size to ~1/3.
+SYMMETRY=3
+
 # Auto-computed playback delay (gifsicle --delay, in centiseconds).
 PLAYBACK_DELAY=$(printf '%.0f' "$(echo "100 / $FPS" | bc -l)")
+
+# Render duration: only need 1/SYMMETRY of a full rotation for a seamless loop.
+RENDER_DURATION=$(echo "scale=4; $DURATION / $SYMMETRY" | bc -l)
 
 OUTER_SVG="$ASSETS_SRC/MenuBarOuterRing.imageset/OuterRing.svg"
 MIDDLE_SVG="$ASSETS_SRC/MenuBarMiddleRing.imageset/MiddleRing.svg"
@@ -58,16 +69,17 @@ for layer in outer middle center; do
 done
 
 # ─── Compose rotating animation with ffmpeg ───────────────────────────────────
-# Each layer is rotated independently using ffmpeg's rotate filter. For a
-# seamless loop we need a full 2π rotation by t=DURATION, so angular rate is
-# 2π/DURATION rad/sec → expression t*2*PI/D.
-# Outer goes CCW (negative angle), middle goes CW (positive), center is static.
-echo "→ Compositing animation..."
+# Each layer is rotated independently using ffmpeg's rotate filter. Angular
+# rate is 2π/DURATION rad/sec (so a full rotation would take DURATION sec).
+# We only render RENDER_DURATION = DURATION/SYMMETRY seconds of motion — at
+# the end, each ring has rotated 360°/SYMMETRY, which the symmetry makes
+# indistinguishable from 0°, so the GIF loops seamlessly.
+echo "→ Compositing animation (${RENDER_DURATION}s = 1/${SYMMETRY} of rotation)..."
 RATE_EXPR="2*PI/${DURATION}"
 ffmpeg -y -loglevel error -stats \
-  -loop 1 -t "$DURATION" -i "$TMP_DIR/outer.png"  \
-  -loop 1 -t "$DURATION" -i "$TMP_DIR/middle.png" \
-  -loop 1 -t "$DURATION" -i "$TMP_DIR/center.png" \
+  -loop 1 -t "$RENDER_DURATION" -i "$TMP_DIR/outer.png"  \
+  -loop 1 -t "$RENDER_DURATION" -i "$TMP_DIR/middle.png" \
+  -loop 1 -t "$RENDER_DURATION" -i "$TMP_DIR/center.png" \
   -filter_complex "
     [0:v]format=rgba,rotate=-t*${RATE_EXPR}:c=none:ow=${SIZE}:oh=${SIZE}[outer];
     [1:v]format=rgba,rotate=t*${RATE_EXPR}:c=none:ow=${SIZE}:oh=${SIZE}[middle];
