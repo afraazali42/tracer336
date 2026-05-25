@@ -253,31 +253,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         actionsItem.submenu = actionsMenu
         appMenu.addItem(actionsItem)
 
-        // Undo / Redo — routed to the first responder's undo manager
+        // Actions submenu — single flat group, no separators. Order is:
+        // text-edit, then window-mgmt, then app hide/show. Selectors all travel
+        // the responder chain to the first responder (text, window, NSApp).
         actionsMenu.addItem(NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z"))
         let redoItem = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
         redoItem.keyEquivalentModifierMask = [.command, .shift]
         actionsMenu.addItem(redoItem)
-
-        actionsMenu.addItem(.separator())
-
-        // Text editing — selectors travel the responder chain to the focused control
         actionsMenu.addItem(NSMenuItem(title: "Cut",  action: #selector(NSText.cut(_:)),  keyEquivalent: "x"))
         actionsMenu.addItem(NSMenuItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
         actionsMenu.addItem(NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
         actionsMenu.addItem(NSMenuItem(title: "Delete", action: #selector(NSText.delete(_:)), keyEquivalent: ""))
         actionsMenu.addItem(NSMenuItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
-
-        actionsMenu.addItem(.separator())
-
-        // Window management — dispatched via the responder chain to the key window
         actionsMenu.addItem(NSMenuItem(title: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"))
         actionsMenu.addItem(NSMenuItem(title: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
         actionsMenu.addItem(NSMenuItem(title: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: ""))
-
-        actionsMenu.addItem(.separator())
-
-        // App hide / show — on NSApplication
         actionsMenu.addItem(NSMenuItem(title: "Hide TRACER336", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"))
         let hideOthers = NSMenuItem(
             title: "Hide Others",
@@ -308,12 +298,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         NSApp.mainMenu = mainMenu
     }
 
-    /// Recursively set `image = nil` on every NSMenuItem in the given menu and
-    /// its submenus. Suppresses the auto-applied SF Symbol icons that macOS
-    /// attaches to items whose selector matches a known system action.
+    /// Recursively suppress the auto-applied SF Symbol glyphs that macOS Tahoe
+    /// attaches to menu items whose selector matches a known system action
+    /// (e.g. info-circle for About, X for Quit, scissors for Cut). Setting
+    /// `image = nil` is not enough — AppKit reapplies the glyph at draw time —
+    /// so we assign a zero-sized empty image instead, which AppKit treats as
+    /// "user-supplied" and respects.
     private func stripAutoIcons(from menu: NSMenu) {
+        let blank = NSImage(size: .zero)
         for item in menu.items {
-            item.image = nil
+            item.image = blank
             if let submenu = item.submenu {
                 stripAutoIcons(from: submenu)
             }
