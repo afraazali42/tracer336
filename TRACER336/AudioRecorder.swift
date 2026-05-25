@@ -221,7 +221,20 @@ class AudioRecorder: NSObject, ObservableObject {
     
     /// Wipe all cached audio chunks and reset the recording start time.
     /// The engine keeps running — new audio starts accumulating immediately.
+    ///
+    /// Ordering matters under the off-thread disk-write model:
+    ///   1. nil out audioFile under fileLock so any new tap callbacks bail
+    ///   2. drain the disk-write queue so writes from in-flight tap callbacks
+    ///      complete before we delete the underlying files
+    ///   3. delete chunks from disk
+    ///   4. open a fresh chunk so recording continues immediately
     func clearBuffer() {
+        fileLock.lock()
+        audioFile = nil
+        fileLock.unlock()
+
+        diskWriteQueue.sync { }
+
         clearFolder()
         recordingStartTime = Date()
         startNewChunk()

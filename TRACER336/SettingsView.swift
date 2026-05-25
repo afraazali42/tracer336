@@ -85,6 +85,7 @@ struct SettingsView: View {
     
     @State private var availableDevices: [AudioInputDevice] = []
     @State private var retentionText: String = "\(AppSettings.retentionHours)"
+    @State private var showClearBufferConfirmation = false
     
     // ── Constants ───────────────────────────────────────────────────────────
     
@@ -262,11 +263,25 @@ struct SettingsView: View {
                 Text("hours")
                     .foregroundStyle(.secondary)
                 Spacer()
+                Button("Clear") {
+                    showClearBufferConfirmation = true
+                }
+                .controlSize(.small)
+                .help("Discard all buffered audio now. Recording continues with a fresh buffer.")
+                Spacer()
                 Toggle("Keep Buffer", isOn: Binding(
                     get: { !clearBufferOnSave },
                     set: { newValue in clearBufferOnSave = !newValue }
                 ))
                 .toggleStyle(.switch)
+            }
+            .alert("Clear the audio buffer?", isPresented: $showClearBufferConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear", role: .destructive) {
+                    recorder.clearBuffer()
+                }
+            } message: {
+                Text("All buffered audio will be permanently deleted. Recording continues with a fresh buffer.")
             }
             
             Divider()
