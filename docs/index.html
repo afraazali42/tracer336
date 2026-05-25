@@ -48,7 +48,9 @@
             --text-muted: #444444;
         }
 
-        html { scroll-behavior: smooth; }
+        /* Removed `scroll-behavior: smooth` — caused a visible smooth-scroll
+           animation when the browser restored scroll position on reload,
+           and we have no internal anchor links that benefit from it anyway. */
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
