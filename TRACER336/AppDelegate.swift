@@ -107,11 +107,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         // Observe recording state and device connection to update the menu bar icon.
         // Uses combineLatest so the icon reflects whichever state takes priority:
         //   error (red) > paused (dimmed) > active (full white)
+        // "error" covers both device disconnection and engine failure — they're
+        // visually identical (red icon) but have separate messaging in Settings.
         recordingObserver = recorder.$isRecording
-            .combineLatest(recorder.$isDeviceDisconnected)
+            .combineLatest(recorder.$isDeviceDisconnected, recorder.$engineFailed)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording, isDisconnected in
-                if isDisconnected {
+            .sink { [weak self] isRecording, isDisconnected, engineFailed in
+                if isDisconnected || engineFailed {
                     self?.menuBarIcon?.setState(.error)
                 } else if isRecording {
                     self?.menuBarIcon?.setState(.active)
@@ -279,7 +281,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         
         let popoverView = MenuPopoverView(
             isRecording: recorder.isRecording,
-            hasDeviceError: recorder.isDeviceDisconnected,
+            hasDeviceError: recorder.isDeviceDisconnected || recorder.engineFailed,
             hasLogErrors: Log.shared.hasUnresolvedErrors,
             onToggleRecording: { [weak self] in
                 guard let self = self else { return }

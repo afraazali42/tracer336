@@ -121,6 +121,14 @@ class AudioRecorder: NSObject, ObservableObject {
     /// Whether the user's selected audio device has been disconnected.
     /// When true, recording is paused and the icon turns red.
     @Published private(set) var isDeviceDisconnected = false
+
+    /// Whether the audio engine has died and the auto-recovery attempts have
+    /// been exhausted. Distinct from device disconnection — this fires when
+    /// AVAudioEngine fails to restart `maxRestartAttempts` times after a
+    /// config change or unexpected stop, for reasons unrelated to the user's
+    /// device choice (Bluetooth glitch, sample rate change, system audio reset,
+    /// etc.). User must toggle Active off/on or pick a different input to retry.
+    @Published private(set) var engineFailed = false
     
     // ── Callbacks ───────────────────────────────────────────────────────────
     
@@ -183,6 +191,7 @@ class AudioRecorder: NSObject, ObservableObject {
     /// Called from SettingsView when the user picks a replacement device.
     func resolveDeviceError(newDeviceID: Int) {
         isDeviceDisconnected = false
+        engineFailed = false
         restartAttempts = 0
         if newDeviceID > 0 {
             setInputDevice(AudioDeviceID(newDeviceID))
@@ -295,8 +304,12 @@ class AudioRecorder: NSObject, ObservableObject {
     /// Resume recording after a pause. The engine was only paused (not torn down),
     /// so we just restart it and open a new chunk file.
     func resumeRecording() {
+        // Reset before the guard — the user toggling Active back on is an
+        // explicit "try again" signal even if the engine technically died.
+        engineFailed = false
+
         guard !isRecording else { return }
-        
+
         startNewChunk()
         
         do {
@@ -526,8 +539,9 @@ class AudioRecorder: NSObject, ObservableObject {
     @objc private func handleEngineConfigChange(_ notification: Notification) {
         Log.warning("Audio engine configuration changed", category: .audio)
         
-        // If the engine stopped due to the config change, try to restart
-        if !engine.isRunning && isRecording && !isIntentionallyPaused && !isDeviceDisconnected {
+        // If the engine stopped due to the config change, try to restart.
+        // Skip if we've already given up (engineFailed) — the user has to act.
+        if !engine.isRunning && isRecording && !isIntentionallyPaused && !isDeviceDisconnected && !engineFailed {
             Log.warning("Engine stopped after config change — attempting recovery", category: .audio)
             attemptEngineRestart()
         }
@@ -536,7 +550,7 @@ class AudioRecorder: NSObject, ObservableObject {
     /// Periodic check that the engine is still alive.
     private func checkEngineHealth() {
         // Only check if we expect the engine to be running
-        guard isRecording && !isIntentionallyPaused && !isDeviceDisconnected else { return }
+        guard isRecording && !isIntentionallyPaused && !isDeviceDisconnected && !engineFailed else { return }
         
         if !engine.isRunning {
             Log.warning("Engine health check: engine unexpectedly stopped", category: .audio)
@@ -548,11 +562,13 @@ class AudioRecorder: NSObject, ObservableObject {
     /// maxRestartAttempts, enter error state and stop retrying.
     private func attemptEngineRestart() {
         guard restartAttempts < maxRestartAttempts else {
-            // Give up — enter error state
+            // Give up — surface a distinct engine-failure state (not a device
+            // disconnect, since the device is still there). UI maps both to
+            // the red error icon but with different messaging.
             isRecording = false
-            isDeviceDisconnected = true  // Reuses the error state UI (red icon)
+            engineFailed = true
             stopEngineHealthMonitor()
-            Log.error("Engine restart failed after \(maxRestartAttempts) attempts — entering error state", category: .audio)
+            Log.error("Engine restart failed after \(maxRestartAttempts) attempts — entering engine-failure state", category: .audio)
             return
         }
         
@@ -564,7 +580,7 @@ class AudioRecorder: NSObject, ObservableObject {
             guard let self = self else { return }
             
             // Double-check we still need to restart
-            guard !self.engine.isRunning && !self.isIntentionallyPaused && !self.isDeviceDisconnected else { return }
+            guard !self.engine.isRunning && !self.isIntentionallyPaused && !self.isDeviceDisconnected && !self.engineFailed else { return }
             
             self.startNewChunk()
             

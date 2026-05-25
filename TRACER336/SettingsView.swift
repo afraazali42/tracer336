@@ -191,8 +191,10 @@ struct SettingsView: View {
                     AppSettings.store.removeObject(forKey: AppSettings.inputDeviceNameKey)
                 }
                 
-                // Selecting a new device while in error state resolves the error
-                if recorder.isDeviceDisconnected {
+                // Selecting a new device while in any error state resolves it.
+                // Engine failures are often fixed by a fresh engine start on a
+                // different input, so we treat both errors the same way here.
+                if recorder.isDeviceDisconnected || recorder.engineFailed {
                     recorder.resolveDeviceError(newDeviceID: newValue)
                 }
             }
@@ -204,6 +206,15 @@ struct SettingsView: View {
                         .foregroundStyle(.red)
                         .font(.caption)
                     Text("Selected device disconnected. Choose a new input or reconnect.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            } else if recorder.engineFailed {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.octagon.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                    Text("Audio engine stopped after recovery failed. Toggle Active off and on, or pick a different input.")
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
