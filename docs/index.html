@@ -250,29 +250,35 @@
 
         .bullets {
             list-style: none;
-            text-align: left;
-            max-width: 600px;
+            counter-reset: bullet;
+            max-width: 560px;
             margin: 0 auto;
             padding: 0;
+            text-align: left;
             position: relative;
         }
 
         .bullets li {
-            font-size: 15px;
+            counter-increment: bullet;
+            font-size: 14px;
             color: var(--text);
-            line-height: 1.7;
-            padding: 10px 0 10px 22px;
+            line-height: 1.55;
+            padding: 14px 0 14px 44px;
             position: relative;
+            border-bottom: 1px solid var(--border);
         }
 
+        .bullets li:last-child { border-bottom: none; }
+
         .bullets li::before {
-            content: "·";
+            content: "0" counter(bullet);
             position: absolute;
-            left: 6px;
-            top: 6px;
-            font-size: 20px;
-            line-height: 1;
-            color: var(--text-dim);
+            left: 0;
+            top: 16px;
+            font-family: ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
         }
 
         /* ── OSS ──────────────────────────────────────────── */
