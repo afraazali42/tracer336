@@ -30,11 +30,14 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 mkdir -p "$OUT_DIR"
 
 SIZE=400        # Final GIF size in px
-DURATION=2.0    # Seconds of ffmpeg-rendered motion per full rotation
-FPS=30          # Source frame rate (kept smooth — playback speed is set below)
-PLAYBACK_DELAY=10 # Centiseconds per frame in final GIF (gifsicle --delay).
-                  # Higher = slower spin. 10 ≈ 10fps display, so a 2s source
-                  # animation plays back over ~5.9s per rotation (calm).
+DURATION=6.0    # Seconds per full rotation. Want slower? Increase this.
+FPS=30          # Frame rate. Higher = smoother motion + larger file.
+                # Playback delay below is auto-computed to match FPS, so
+                # changing DURATION/FPS gives you a natural-speed animation.
+
+# Playback delay in centiseconds (gifsicle --delay). Matches FPS so each
+# frame is displayed for its source duration — produces smooth motion.
+PLAYBACK_DELAY=$(printf '%.0f' "$(echo "100 / $FPS" | bc -l)")
 
 OUTER_SVG="$ASSETS_SRC/MenuBarOuterRing.imageset/OuterRing.svg"
 MIDDLE_SVG="$ASSETS_SRC/MenuBarMiddleRing.imageset/MiddleRing.svg"
