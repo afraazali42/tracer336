@@ -84,8 +84,15 @@ class AudioRecorder: NSObject, ObservableObject {
     private var chunkTimer: Timer?           // Fires every 60s to rotate chunks
     private var currentFormat: AVAudioFormat? // The recording format (matches hardware sample rate)
     
-    /// NSLock protecting `audioFile` — the audio tap writes from a background thread.
+    /// NSLock protecting `audioFile` — both the audio tap and the disk-write
+    /// queue need to swap/read it safely against chunk rotations.
     private let fileLock = NSLock()
+
+    /// Serial queue that handles all AAC encoding + disk writes. The tap
+    /// callback only does a cheap memcpy and dispatches here, so even slow
+    /// disk I/O can't stall the audio engine's real-time thread (which is
+    /// what causes HAL "skipping cycle due to overload" crackles).
+    private let diskWriteQueue = DispatchQueue(label: "com.tracer336.disk-write", qos: .utility)
     
     // ── Chunk Storage ───────────────────────────────────────────────────────
     
@@ -266,12 +273,28 @@ class AudioRecorder: NSObject, ObservableObject {
         
         startNewChunk()
         
-        // Install the audio tap — this callback runs on a real-time audio thread
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { [weak self] buffer, _ in
+        // Install the audio tap. Runs on a real-time audio thread; we keep its
+        // work tiny (copy buffer + capture current chunk file + async dispatch)
+        // so AAC encoding + disk I/O happen off-thread on diskWriteQueue. This
+        // prevents disk-pressure and main-thread stalls from making the HAL
+        // I/O work loop miss deadlines (which is what causes audible crackles
+        // in concurrent playback). Buffer size doubled from 4096 to 8192 frames
+        // (~93ms → ~186ms at 44.1kHz) for additional headroom on each callback.
+        inputNode.installTap(onBus: 0, bufferSize: 8192, format: recordingFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
+            guard let copy = self.copyBuffer(buffer) else { return }
+
+            // Brief lock to capture the file reference. Avoids racing with
+            // chunk rotation, which swaps audioFile under the same lock.
             self.fileLock.lock()
-            try? self.audioFile?.write(from: buffer)
+            let targetFile = self.audioFile
             self.fileLock.unlock()
+
+            guard let file = targetFile else { return }
+
+            self.diskWriteQueue.async {
+                try? file.write(from: copy)
+            }
         }
         
         engine.prepare()
@@ -294,7 +317,32 @@ class AudioRecorder: NSObject, ObservableObject {
         // Start monitoring engine health
         startEngineHealthMonitor()
     }
-    
+
+    /// Copy an AVAudioPCMBuffer to a fresh, independently-owned buffer so we
+    /// can hold it past the audio tap callback (the system reuses the original
+    /// for subsequent callbacks). Pure memcpy per channel — runs on the audio
+    /// thread and must stay fast.
+    private func copyBuffer(_ source: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let copy = AVAudioPCMBuffer(
+            pcmFormat: source.format,
+            frameCapacity: source.frameCapacity
+        ) else {
+            return nil
+        }
+        copy.frameLength = source.frameLength
+
+        let frameCount = Int(source.frameLength)
+        let channelCount = Int(source.format.channelCount)
+
+        if let srcData = source.floatChannelData, let dstData = copy.floatChannelData {
+            for ch in 0..<channelCount {
+                memcpy(dstData[ch], srcData[ch], frameCount * MemoryLayout<Float32>.size)
+            }
+        }
+
+        return copy
+    }
+
     /// Pause recording. Uses engine.pause() instead of full teardown so the
     /// audio graph stays intact and resuming is instant.
     func stopRecording() {
@@ -881,6 +929,12 @@ class AudioRecorder: NSObject, ObservableObject {
     ///   - minutes: Number of minutes to export (rounded up from seconds).
     ///   - forceAutoSave: If true, skip the save dialog even if "Always Ask" is on.
     func exportLast(minutes: Int, forceAutoSave: Bool = false) {
+        // Drain pending tap writes for the current chunk before we release it.
+        // Each queued write holds a strong reference to the file, which would
+        // otherwise delay deinit (and the M4A trailer write) until the queue
+        // catches up. sync{} blocks until the serial queue is idle.
+        diskWriteQueue.sync { }
+
         // Capture the URL of the current chunk before we release it, so we can
         // verify it actually finalized before reading. Setting audioFile = nil
         // triggers AVAudioFile's deinit, which closes the file and tells the
