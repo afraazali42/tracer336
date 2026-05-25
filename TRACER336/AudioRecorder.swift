@@ -745,12 +745,53 @@ class AudioRecorder: NSObject, ObservableObject {
     ///   - minutes: Number of minutes to export (rounded up from seconds).
     ///   - forceAutoSave: If true, skip the save dialog even if "Always Ask" is on.
     func exportLast(minutes: Int, forceAutoSave: Bool = false) {
-        // Close the current chunk so it's readable
-        rotateChunk()
-        
-        // Short delay for the file to fully flush
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+        // Capture the URL of the current chunk before we release it, so we can
+        // verify it actually finalized before reading. Setting audioFile = nil
+        // triggers AVAudioFile's deinit, which closes the file and tells the
+        // underlying AAC encoder to write the M4A trailer.
+        fileLock.lock()
+        let finalizingURL = audioFile?.url
+        audioFile = nil
+        fileLock.unlock()
+
+        // Start a new chunk so the audio tap keeps writing while we export.
+        startNewChunk()
+
+        // AVAudioFile's deinit *initiates* the trailer write but the AAC encoder
+        // may finalize asynchronously. Poll the just-closed chunk until it parses
+        // as a valid AVURLAsset, or bail out after ~250ms. Most disks finish in
+        // a single poll cycle (<40ms); the bound stops a busted encoder from
+        // hanging the UI indefinitely.
+        waitForChunkReadable(finalizingURL) { [weak self] in
             self?.performExportSetup(minutes: minutes, forceAutoSave: forceAutoSave)
+        }
+    }
+
+    /// Polls until the given chunk file is readable as an `AVURLAsset` (track
+    /// metadata + non-zero duration present), or gives up after a bounded number
+    /// of attempts. Always invokes `completion` exactly once on the main queue.
+    private func waitForChunkReadable(_ url: URL?, attempt: Int = 0, completion: @escaping () -> Void) {
+        // No file means nothing was being written — proceed immediately.
+        guard let url = url else {
+            completion()
+            return
+        }
+
+        let asset = AVURLAsset(url: url)
+        if asset.tracks(withMediaType: .audio).first != nil, asset.duration.seconds > 0 {
+            completion()
+            return
+        }
+
+        let maxAttempts = 10  // 10 × 25ms = 250ms ceiling.
+        guard attempt < maxAttempts else {
+            Log.warning("Chunk \(url.lastPathComponent) didn't finalize within 250ms — exporting without it", category: .export)
+            completion()
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) { [weak self] in
+            self?.waitForChunkReadable(url, attempt: attempt + 1, completion: completion)
         }
     }
     
