@@ -70,7 +70,7 @@ hit ⌘R in Xcode. requires macOS 13+ and Xcode 15+. grant microphone permission
 
 **engine recovery** — if the audio engine crashes (rare, but happens with Bluetooth), it automatically tries to restart up to 3 times. if it can't, it tells you.
 
-**developer friendly** — every file is heavily commented. there's a built-in logging system with a real-time logs window. the architecture is designed for plugins. fork it and go nuts.
+**developer friendly** — every file is heavily commented. there's a built-in logging system with a real-time logs window. fork it and go nuts.
 
 ## settings
 
@@ -117,14 +117,14 @@ Log.shared.$entries
     .sink { entries in /* update your UI */ }
 ```
 
-to add a custom log category for a plugin:
+to add a custom log category:
 
 ```swift
 extension Log.Category {
-    static let myPlugin = Log.Category(rawValue: "myPlugin")
+    static let myFeature = Log.Category(rawValue: "myFeature")
 }
 
-Log.info("Plugin loaded", category: .myPlugin)
+Log.info("hello from a new module", category: .myFeature)
 ```
 
 to add a new setting:

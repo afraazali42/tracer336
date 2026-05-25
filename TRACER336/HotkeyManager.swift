@@ -17,12 +17,6 @@
 //     - hotkeyModifiers (UInt) — modifier flags (⌘, ⇧, ⌥, ⌃)
 //   A keyCode of 0xFFFF means "no hotkey set".
 //
-// FOR PLUGIN DEVELOPERS:
-//   - Call HotkeyManager.shared.register() to activate the current hotkey
-//   - Call HotkeyManager.shared.unregister() to deactivate
-//   - Set `onHotkeyPressed` to handle the shortcut action
-//   - The hotkey display string is available via displayString(keyCode:modifiers:)
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Cocoa

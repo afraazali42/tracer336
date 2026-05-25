@@ -13,10 +13,6 @@
 //   - "Clear" button wipes the log buffer
 //   - Opening the window clears the "unresolved errors" flag (dismisses red dots)
 //
-// FOR PLUGIN DEVELOPERS:
-//   The LogsView observes Log.shared.$entries via Combine. If you add custom
-//   log categories, they'll appear here automatically with no changes needed.
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import SwiftUI

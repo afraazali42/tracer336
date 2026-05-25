@@ -30,11 +30,6 @@
 //   All points are in the overlay window's local coordinates (bottom-left origin).
 //   `startPoint` = icon center, `currentPoint` = cursor position (or reel target).
 //
-// FOR PLUGIN DEVELOPERS:
-//   - Override draw() to add custom visual elements to the drag overlay
-//   - The `lineProgress` property (0–1) tells you the current animation state
-//   - Hook `onReelProgress` / `onReelComplete` for custom reel-back behavior
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Cocoa

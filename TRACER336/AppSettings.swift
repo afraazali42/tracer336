@@ -17,13 +17,6 @@
 //     user-chosen folders across launches. See setSaveFolderWithBookmark() and
 //     resolveSaveFolderBookmark() for the full flow.
 //
-// FOR PLUGIN DEVELOPERS:
-//   To add a new setting:
-//   1. Add a static key: `static let mySettingKey = "mySetting"`
-//   2. Add a static accessor with a default value
-//   3. Use @AppStorage(AppSettings.mySettingKey, store: AppSettings.store)
-//      in SwiftUI views for two-way binding
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Foundation

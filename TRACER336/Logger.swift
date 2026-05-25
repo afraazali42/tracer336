@@ -34,18 +34,6 @@
 //     Log.error("Export failed: \(error)", category: .export)
 //     Log.debug("Drag ratio: \(ratio)", category: .ui)
 //
-// FOR PLUGIN DEVELOPERS:
-//   To add a custom log category for your plugin:
-//     extension Log.Category {
-//         static let myPlugin = Log.Category(rawValue: "myPlugin")
-//     }
-//   Then use: Log.info("Plugin loaded", category: .myPlugin)
-//
-//   To observe log entries in real-time:
-//     Log.shared.$entries
-//         .receive(on: DispatchQueue.main)
-//         .sink { entries in ... }
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Foundation

@@ -18,12 +18,6 @@
 //   checks AppSettings.notificationsEnabled before delivering — call
 //   notifyExportSuccess() unconditionally and it will no-op if disabled.
 //
-// FOR PLUGIN DEVELOPERS:
-//   To add custom notification types:
-//   1. Define a new category ID and action(s) in setup()
-//   2. Add a new delivery method similar to notifyExportSuccess()
-//   3. Handle the new action in userNotificationCenter(_:didReceive:...)
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import UserNotifications

@@ -33,12 +33,6 @@
 //   enabled for crisp rendering at any size. Red overlays for the error state
 //   are lazily created on first use and masked to the ring shapes.
 //
-// FOR PLUGIN DEVELOPERS:
-//   - Call setState(.active/.paused/.error) to change the icon appearance
-//   - Call setDragRatio(0–1) to rotate rings during custom interactions
-//   - Call pulseSuccess() to play the export-complete animation
-//   - Add new animation states by extending the IconState enum
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Cocoa

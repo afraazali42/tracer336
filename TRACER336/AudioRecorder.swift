@@ -44,13 +44,6 @@
 //   and the icon turns red. Reconnecting auto-resumes. The app never silently
 //   switches to a different device.
 //
-// FOR PLUGIN DEVELOPERS:
-//   - `onExportSuccess` callback fires after every successful export
-//   - `availableSeconds` tells you how much audio is buffered right now
-//   - `clearBuffer()` wipes the circular buffer and resets the timer
-//   - Add new export formats by extending exportToURL()
-//   - The chunk folder path is in `recordingsFolder` if you need raw access
-//
 // ─────────────────────────────────────────────────────────────────────────────
 
 import AVFoundation
