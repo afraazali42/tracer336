@@ -165,11 +165,13 @@ class AudioRecorder: NSObject, ObservableObject {
         setupFolder()
         clearFolder()
         startDeviceMonitoring()
+        startHALDiagnostics()
     }
-    
+
     deinit {
         stopDeviceMonitoring()
         stopEngineHealthMonitor()
+        stopHALDiagnostics()
     }
     
     /// Create the temp directory for chunk storage.
@@ -492,6 +494,136 @@ class AudioRecorder: NSObject, ObservableObject {
         }
     }
     
+    // ─────────────────────────────────────────────────────────────────────────
+    // MARK: - HAL Diagnostics
+    // ─────────────────────────────────────────────────────────────────────────
+    //
+    // macOS may reconfigure the audio HAL (sample rate, buffer size, default
+    // device) in response to app state transitions (popover open, activation
+    // policy switch, becoming foreground). These reconfigurations cause brief
+    // audible glitches in other apps' playback (the "crackle on click" issue).
+    //
+    // To pinpoint the cause when it happens, we subscribe to property listeners
+    // on the default input AND output devices and log every change with the
+    // standard Log timestamp. Next time the crackle happens, the logs will show
+    // exactly which property flipped (and on which device) around that moment.
+    //
+    // Listeners are installed once at init and removed in deinit. They fire on
+    // a CoreAudio queue, not the main thread — Log is thread-safe via its
+    // internal serial queue, so no extra dispatch is needed.
+
+    /// Tokens kept so we can remove each listener cleanly in deinit.
+    private var halListenerTokens: [(AudioObjectID, AudioObjectPropertyAddress, AudioObjectPropertyListenerBlock)] = []
+
+    private func startHALDiagnostics() {
+        // Default input + output devices
+        for (label, scope) in [("input", kAudioObjectPropertyScopeInput), ("output", kAudioObjectPropertyScopeOutput)] {
+            guard let device = AudioRecorder.defaultDevice(scope: scope) else { continue }
+            let name = AudioRecorder.deviceName(device) ?? "unknown"
+            Log.info("[HAL] watching \(label) device: \(name) (id=\(device))", category: .audio)
+
+            subscribeHAL(on: device, deviceLabel: "\(label)/\(name)", selectors: [
+                (kAudioDevicePropertyDeviceIsRunningSomewhere, "isRunningSomewhere"),
+                (kAudioDevicePropertyNominalSampleRate,        "sampleRate"),
+                (kAudioDevicePropertyBufferFrameSize,          "bufferFrameSize"),
+            ])
+        }
+
+        // System-level: default device changes (e.g. user switches output via menu bar)
+        subscribeHAL(on: AudioObjectID(kAudioObjectSystemObject), deviceLabel: "system", selectors: [
+            (kAudioHardwarePropertyDefaultInputDevice,  "defaultInputDevice"),
+            (kAudioHardwarePropertyDefaultOutputDevice, "defaultOutputDevice"),
+        ])
+    }
+
+    private func subscribeHAL(on device: AudioObjectID, deviceLabel: String, selectors: [(AudioObjectPropertySelector, String)]) {
+        for (selector, propName) in selectors {
+            var address = AudioObjectPropertyAddress(
+                mSelector: selector,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            let block: AudioObjectPropertyListenerBlock = { _, _ in
+                let value = AudioRecorder.readHALValue(device: device, selector: selector)
+                Log.info("[HAL] \(deviceLabel) → \(propName): \(value)", category: .audio)
+            }
+
+            let status = AudioObjectAddPropertyListenerBlock(device, &address, nil, block)
+            if status == noErr {
+                halListenerTokens.append((device, address, block))
+            } else {
+                Log.warning("[HAL] failed to subscribe to \(deviceLabel)/\(propName): status=\(status)", category: .audio)
+            }
+        }
+    }
+
+    private func stopHALDiagnostics() {
+        for (device, address, block) in halListenerTokens {
+            var addr = address
+            AudioObjectRemovePropertyListenerBlock(device, &addr, nil, block)
+        }
+        halListenerTokens.removeAll()
+    }
+
+    /// Read the current value of a HAL property as a human-readable string.
+    /// Used inside the listener callback so we can log the *new* value.
+    private static func readHALValue(device: AudioObjectID, selector: AudioObjectPropertySelector) -> String {
+        var address = AudioObjectPropertyAddress(
+            mSelector: selector,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        switch selector {
+        case kAudioDevicePropertyNominalSampleRate:
+            var rate: Float64 = 0
+            var size = UInt32(MemoryLayout<Float64>.size)
+            AudioObjectGetPropertyData(device, &address, 0, nil, &size, &rate)
+            return "\(rate) Hz"
+
+        case kAudioDevicePropertyBufferFrameSize:
+            var frames: UInt32 = 0
+            var size = UInt32(MemoryLayout<UInt32>.size)
+            AudioObjectGetPropertyData(device, &address, 0, nil, &size, &frames)
+            return "\(frames) frames"
+
+        case kAudioDevicePropertyDeviceIsRunningSomewhere:
+            var running: UInt32 = 0
+            var size = UInt32(MemoryLayout<UInt32>.size)
+            AudioObjectGetPropertyData(device, &address, 0, nil, &size, &running)
+            return running != 0 ? "running" : "idle"
+
+        case kAudioHardwarePropertyDefaultInputDevice, kAudioHardwarePropertyDefaultOutputDevice:
+            var newDevice: AudioDeviceID = 0
+            var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+            AudioObjectGetPropertyData(device, &address, 0, nil, &size, &newDevice)
+            let name = AudioRecorder.deviceName(newDevice) ?? "unknown"
+            return "now \(name) (id=\(newDevice))"
+
+        default:
+            return "(value not read)"
+        }
+    }
+
+    /// The system's current default input or output device, or nil if unavailable.
+    private static func defaultDevice(scope: AudioObjectPropertyScope) -> AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: scope == kAudioObjectPropertyScopeInput
+                ? kAudioHardwarePropertyDefaultInputDevice
+                : kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var deviceID: AudioDeviceID = 0
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address, 0, nil, &size, &deviceID
+        )
+        return status == noErr && deviceID != 0 ? deviceID : nil
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // MARK: - Engine Health Monitoring
     // ─────────────────────────────────────────────────────────────────────────

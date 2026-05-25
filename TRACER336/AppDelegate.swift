@@ -416,11 +416,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
         popover.contentViewController = NSHostingController(rootView: popoverView)
         
         self.popover = popover
+        Log.info("[Activation] popover opening", category: .audio)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
     }
-    
+
     func popoverDidClose(_ notification: Notification) {
+        Log.info("[Activation] popover closed", category: .audio)
         popover = nil
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        Log.info("[Activation] app became active", category: .audio)
+    }
+
+    func applicationWillResignActive(_ notification: Notification) {
+        Log.info("[Activation] app will resign active", category: .audio)
     }
     
     // ─────────────────────────────────────────────────────────────────────────
