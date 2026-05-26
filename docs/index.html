@@ -527,7 +527,8 @@
         </div>
     </section>
 
-    <!-- Contact dropdown handler -->
+    <!-- Contact dropdown handler — persists the user's selection in
+         localStorage so it survives reloads (matches the no-intro pattern). -->
     <script>
         (function() {
             const responses = {
@@ -537,16 +538,35 @@
                 password: "skill issue",
                 support: 'fym you need support? how about YOU support ME → <a href="https://ko-fi.com/afraaz" target="_blank" rel="noopener">ko-fi.com/afraaz</a>'
             };
+            const STORAGE_KEY = 'tracer336_contact_choice';
             const sel = document.getElementById('contact-type');
             const out = document.getElementById('contact-response');
-            sel.addEventListener('change', (e) => {
-                const v = e.target.value;
+
+            function render(v) {
                 if (v && responses[v]) {
                     out.innerHTML = responses[v];
                     out.classList.add('show');
                 } else {
                     out.classList.remove('show');
                 }
+            }
+
+            // Restore the previous selection (if any) on load
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && responses[saved]) {
+                    sel.value = saved;
+                    render(saved);
+                }
+            } catch (_) { /* private mode / no storage */ }
+
+            sel.addEventListener('change', (e) => {
+                const v = e.target.value;
+                try {
+                    if (v) localStorage.setItem(STORAGE_KEY, v);
+                    else localStorage.removeItem(STORAGE_KEY);
+                } catch (_) { /* private mode / no storage */ }
+                render(v);
             });
         })();
     </script>
