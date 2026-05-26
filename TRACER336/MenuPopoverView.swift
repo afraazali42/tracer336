@@ -11,12 +11,14 @@
 //   ├──────────────────────────┤
 //   │ ⏺ Recording           🟢 │  ← Toggle recording (does NOT close popover)
 //   │ ⬇ Quick Save              │  ← Export all buffered audio immediately
-//   │ { } Source Code            │  ← Opens GitHub repo
-//   │ ♥ Support                  │  ← Opens support page (closes popover)
 //   ├──────────────────────────┤
 //   │ ⚙ Settings     🔴   ⌘,   │  ← Opens settings (red dot = device error)
 //   │ ✕ Quit              ⌘Q   │
 //   └──────────────────────────┘
+//
+// Source Code + Support links are intentionally NOT in the popover —
+// they're accessible from the Settings window's footer instead, which
+// keeps this menu focused on the actions you actually use repeatedly.
 //
 // The `hasDeviceError` flag controls whether a pulsing red dot appears next
 // to "Settings..." to alert the user that their audio device was disconnected.
@@ -34,7 +36,6 @@ struct MenuPopoverView: View {
     var hasLogErrors: Bool      // True when there are unresolved error-level logs
     var onToggleRecording: () -> Void
     var onSaveAll: () -> Void
-    var onSupport: () -> Void
     var onSettings: () -> Void
     var onQuit: () -> Void
 
@@ -89,13 +90,7 @@ struct MenuPopoverView: View {
                 .padding(.horizontal, 4)
                 
                 popoverButton(icon: "arrow.down.circle", label: "Quick Save", action: onSaveAll)
-                
-                popoverButton(icon: "curlybraces", label: "Source Code") {
-                    NSWorkspace.shared.open(URL(string: "https://github.com/afraazali42/TRACER336")!)
-                }
-                
-                popoverButton(icon: "heart", label: "Support", action: onSupport)
-                
+
                 Divider()
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)

@@ -464,11 +464,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPopoverD
                 let totalMinutes = max(1, Int(ceil(Double(self.recorder.availableSeconds) / 60.0)))
                 self.recorder.exportLast(minutes: totalMinutes, forceAutoSave: true)
             },
-            onSupport: { [weak self] in
-                self?.popover?.performClose(nil)
-                // TODO: Replace with Ko-fi URL once set up
-                NSWorkspace.shared.open(URL(string: "https://tracer336.com")!)
-            },
             onSettings: { [weak self] in
                 self?.popover?.performClose(nil)
                 self?.openSettings()
