@@ -38,6 +38,10 @@
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
+            color-scheme: dark;  /* Tells the browser (and embedded iframes
+                                    like Ko-fi's tip widget) that this page
+                                    is dark-themed, so they can render their
+                                    UI in dark mode to match. */
             --bg: #050505;
             --bg-raised: #0d0d0d;
             --bg-card: #111111;
@@ -338,14 +342,15 @@
 
         .tip { padding: 24px 0 0; }
 
-        /* Wrap the Ko-fi iframe in a clean rounded container. The iframe
-           itself has a white background (Ko-fi's default) so we round/clip
-           it here for visual consistency with the rest of the cards. */
+        /* Rounded container around the Ko-fi iframe. Background matches
+           the site's dark theme so any iframe edge padding blends in
+           instead of showing white strips. */
         .tip-frame {
             margin-top: 18px;
             border-radius: 8px;
             overflow: hidden;
-            background: #fff;
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
             position: relative;
         }
 
