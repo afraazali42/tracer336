@@ -16,7 +16,7 @@ macOS screen capture saves files like `Screenshot 2026-05-21 at 10.54.15 PM.png`
 
 Local-only, gitignored:
 
-- `.private/shipping-notes.md` — Apple Developer enrollment ID, D-U-N-S, LLC details, Team ID (when assigned), cert serials, notarytool keychain profile, quick command reference. **Keep this file updated** whenever new shipping-relevant info comes up — Team IDs, cert info, EIN, App Store Connect IDs, Ko-fi decisions, release versions, etc.
+- `.private/shipping-notes.md` — Apple Developer enrollment ID, D-U-N-S, LLC details, Team ID (when assigned), cert serials, notarytool keychain profile, quick command reference. **Keep this file updated** whenever new shipping-relevant info comes up — Team IDs, cert info, EIN, App Store Connect IDs, GitHub Sponsors status, release versions, etc.
 - `.private/` itself is in `.gitignore`. If you need a new local-only file, put it there.
 
 ## Repo structure quick reference
