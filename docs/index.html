@@ -338,21 +338,36 @@
 
         .tip { padding: 24px 0 0; }
 
-        .tip-link {
-            display: inline-block;
+        /* Wrap the Ko-fi iframe in a clean rounded container. The iframe
+           itself has a white background (Ko-fi's default) so we round/clip
+           it here for visual consistency with the rest of the cards. */
+        .tip-frame {
             margin-top: 18px;
-            padding: 12px 28px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            text-decoration: none;
             border-radius: 8px;
-            font-size: 14px;
-            font-family: ui-monospace, "SF Mono", Menlo, Monaco, monospace;
-            letter-spacing: 0.02em;
+            overflow: hidden;
+            background: #fff;
+            position: relative;
         }
 
-        .tip-link:hover { border-color: var(--border-hover); }
+        .tip-frame iframe {
+            display: block;
+            width: 100%;
+            height: 680px;
+            border: none;
+        }
+
+        .tip-fallback {
+            display: block;
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .tip-fallback a {
+            color: var(--text-dim);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
 
         /* ── Contact ─────────────────────────────────────── */
 
@@ -530,13 +545,23 @@
         </div>
     </section>
 
-    <!-- Tip jar -->
+    <!-- Tip jar — embedded Ko-fi widget. The iframe is lazy-loaded so it
+         only fetches from ko-fi.com when the user actually scrolls near it,
+         keeping the initial page load network-clean. -->
     <section class="tip">
         <div class="container">
             <div class="oss-card">
                 <h2>tip jar</h2>
-                <p>the app is free and always will be. but if it saved you even once and you wanna throw a couple bucks my way, i won't say no.</p>
-                <a href="https://ko-fi.com/afraaz" class="tip-link" target="_blank" rel="noopener">☕ ko-fi.com/afraaz</a>
+                <p>the app is free and always will be. but if it saved you even once, you can throw a couple bucks my way below.</p>
+                <div class="tip-frame">
+                    <iframe
+                        id="kofiframe"
+                        src="https://ko-fi.com/afraaz/?hidefeed=true&widget=true&embed=true&preview=true"
+                        title="Support afraaz on Ko-fi"
+                        loading="lazy"
+                    ></iframe>
+                </div>
+                <span class="tip-fallback">if the widget doesn't load, you can also go to <a href="https://ko-fi.com/afraaz" target="_blank" rel="noopener">ko-fi.com/afraaz</a> directly.</span>
             </div>
         </div>
     </section>
