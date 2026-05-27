@@ -334,6 +334,26 @@
             position: relative;
         }
 
+        /* ── Tip ─────────────────────────────────────────── */
+
+        .tip { padding: 24px 0 0; }
+
+        .tip-link {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 12px 28px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+            letter-spacing: 0.02em;
+        }
+
+        .tip-link:hover { border-color: var(--border-hover); }
+
         /* ── Contact ─────────────────────────────────────── */
 
         .contact { padding: 24px 0 60px; }
@@ -401,7 +421,8 @@
            no animation, but the consistency carries the visible elements. */
         .oss .oss-card      { animation: fadeUp 1s ease both 0.55s; }
         .features .oss-card { animation: fadeUp 1s ease both 0.7s;  }
-        .contact .oss-card  { animation: fadeUp 1s ease both 0.85s; }
+        .tip .oss-card      { animation: fadeUp 1s ease both 0.85s; }
+        .contact .oss-card  { animation: fadeUp 1s ease both 1.0s;  }
 
         /* Kill the intro on return visits or when the user has motion off.
            Wobble on "i'm already tracer" is on inner spans and stays intact. */
@@ -411,11 +432,13 @@
         .no-intro .demo,
         .no-intro .oss .oss-card,
         .no-intro .features .oss-card,
+        .no-intro .tip .oss-card,
         .no-intro .contact .oss-card { animation: none; }
 
         @media (prefers-reduced-motion: reduce) {
             h1, .hero-quote-attr, .hero-sub, .demo,
-            .oss .oss-card, .features .oss-card, .contact .oss-card { animation: none; }
+            .oss .oss-card, .features .oss-card,
+            .tip .oss-card, .contact .oss-card { animation: none; }
         }
 
         /* ── Responsive ──────────────────────────────────── */
@@ -503,6 +526,17 @@
                     <li>Under 2mb</li>
                     <li>Free and open source. Do what you want</li>
                 </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tip jar -->
+    <section class="tip">
+        <div class="container">
+            <div class="oss-card">
+                <h2>tip jar</h2>
+                <p>the app is free and always will be. but if it saved you even once and you wanna throw a couple bucks my way, i won't say no.</p>
+                <a href="https://ko-fi.com/afraaz" class="tip-link" target="_blank" rel="noopener">☕ ko-fi.com/afraaz</a>
             </div>
         </div>
     </section>
