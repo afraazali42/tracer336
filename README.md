@@ -8,8 +8,8 @@ aite so pretty much there was this app I used to use that would record audio in 
 
 [![requirements](https://img.shields.io/badge/requirements-macOS%2013%2B-blue)](https://tracer336.com)
 [![license](https://img.shields.io/badge/license-GPL--3.0-darkred)](LICENSE)
-[![swift](https://img.shields.io/badge/swift-100%25-orange)](https://github.com/afraazali42/TRACER336)
-[![download](https://img.shields.io/badge/download-purple)](https://github.com/afraazali42/TRACER336/releases)
+[![swift](https://img.shields.io/badge/swift-100%25-orange)](https://github.com/afraaz-llc/TRACER336)
+[![download](https://img.shields.io/badge/download-purple)](https://github.com/afraaz-llc/TRACER336/releases)
 [![website](https://img.shields.io/badge/website-darkgreen)](https://tracer336.com)
 
 </td>
@@ -36,7 +36,7 @@ the icon's rings spin while you drag like a tape spool. there's a rubber band sn
 
 ### download
 
-grab the latest `.dmg` from [Releases](https://github.com/afraazali42/TRACER336/releases), open it, drag TRACER336 to Applications. done.
+grab the latest `.dmg` from [Releases](https://github.com/afraaz-llc/TRACER336/releases), open it, drag TRACER336 to Applications. done.
 
 ### homebrew
 
@@ -49,7 +49,7 @@ brew install --cask tracer336
 ### build from source
 
 ```
-git clone https://github.com/afraazali42/TRACER336.git
+git clone https://github.com/afraaz-llc/TRACER336.git
 cd TRACER336
 open TRACER336.xcodeproj
 ```
@@ -143,7 +143,7 @@ private var mySetting = false
 
 ## updates
 
-this app doesn't connect to the internet. like, at all. that's the whole point. but it also means it can't check for updates. so if something breaks or feels off, check the [releases page](https://github.com/afraazali42/TRACER336/releases) to see if there's a newer version. if there isn't, open an issue and i'll look at it. or honestly just fork it and fix it yourself. it's your code now.
+this app doesn't connect to the internet. like, at all. that's the whole point. but it also means it can't check for updates. so if something breaks or feels off, check the [releases page](https://github.com/afraaz-llc/TRACER336/releases) to see if there's a newer version. if there isn't, open an issue and i'll look at it. or honestly just fork it and fix it yourself. it's your code now.
 
 ## license
 

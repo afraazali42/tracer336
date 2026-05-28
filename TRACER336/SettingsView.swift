@@ -416,7 +416,7 @@ struct SettingsView: View {
                 Spacer()
                 
                 Button(action: {
-                    NSWorkspace.shared.open(URL(string: "https://github.com/afraazali42/TRACER336")!)
+                    NSWorkspace.shared.open(URL(string: "https://github.com/afraaz-llc/TRACER336")!)
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: "curlybraces")
@@ -430,7 +430,7 @@ struct SettingsView: View {
                     // TODO: Point at GitHub Sponsors profile once the
                     // sponsorship application is approved. Placeholder
                     // URL is the repo so the button is still useful.
-                    NSWorkspace.shared.open(URL(string: "https://github.com/afraazali42/TRACER336")!)
+                    NSWorkspace.shared.open(URL(string: "https://github.com/afraaz-llc/TRACER336")!)
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: "heart")
